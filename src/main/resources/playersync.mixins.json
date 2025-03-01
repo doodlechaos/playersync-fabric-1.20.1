@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "package": "com.doodlechaos.playersync.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "MinecraftClientMixin",
+    "MinecraftServerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "GameRendererMixin",
+    "MinecraftClientMixin",
+    "RenderTickCounterMixin"
+  ]
+}
