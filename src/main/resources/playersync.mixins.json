@@ -4,14 +4,15 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "MinecraftClientMixin",
-    "MinecraftServerMixin"
+    "MinecraftServerMixin",
+    "GameRendererMixin",
+    "KeyBindingMixin",
+    "RenderTickCounterMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
-    "GameRendererMixin",
-    "MinecraftClientMixin",
-    "RenderTickCounterMixin"
+
   ]
 }

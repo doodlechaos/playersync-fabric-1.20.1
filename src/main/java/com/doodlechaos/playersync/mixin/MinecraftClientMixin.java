@@ -1,34 +1,64 @@
 package com.doodlechaos.playersync.mixin;
 
 import com.doodlechaos.playersync.PlayerSync;
+import com.doodlechaos.playersync.Sync.PlayerKeyframe;
+import com.doodlechaos.playersync.Sync.PlayerRecorder;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.server.MinecraftServer;
+import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.doodlechaos.playersync.PlayerSync.LOGGER;
+
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin {
 
-    @Inject(method = "render", at = @At("HEAD"))
-    private void onClientRender(CallbackInfo ci) {
+    //When recording or playing back, render is called once every video frame
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    private void onClientRenderStart(CallbackInfo ci) {
 
-        if(PlayerSync.FramesToProcess <= 0 && PlayerSync.TickClient <= 0 && PlayerSync.TickServer <= 0)
-        {
-            PlayerSync.ManualTime = false;
+        if(PlayerSync.TickServerFlag){
+            ci.cancel();
             return;
         }
 
-        MinecraftServer server = MinecraftClient.getInstance().getServer();
-        PlayerSync.stepSyncFrame(server);
+/*        if(PlayerSync.PlayingBack){
+        }*/
+
+        if(PlayerSync.PlayingBack){
+            PlayerSync.SimulateKeystrokes();
+        }
+    }
+
+
+    @Inject(method = "render", at = @At("TAIL"))
+    private void onClientRenderFinish(CallbackInfo ci) {
+
+        if(PlayerSync.Recording){
+            PlayerRecorder.RecordKeyframe();
+        }
+        if(PlayerSync.PlayingBack){
+            PlayerSync.setPlayerFromKeyframe();
+            PlayerSync.playbackIndex++;
+        }
+/*        if(PlayerSync.PlayingBack){
+            PlayerSync.setPlayerFromKeyframe();
+            PlayerSync.playbackIndex++;
+        }*/
 
     }
 
+
+    //Tick is called from the render loop when necessary
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onClientTick(CallbackInfo ci) {
-        if (PlayerSync.ManualTime) {
-            PlayerSync.AllowServerTickOnce = true;
+        if (PlayerSync.Recording || PlayerSync.PlayingBack) {
+            PlayerSync.TickServerFlag = true;
         }
     }
 

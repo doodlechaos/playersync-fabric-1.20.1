@@ -18,6 +18,9 @@
 		"main": [
 			"com.doodlechaos.playersync.PlayerSync"
 		],
+		"client": [
+			"com.doodlechaos.playersync.PlayerSyncClient"
+		],
 		"fabric-datagen": [
 			"com.doodlechaos.playersync.PlayerSyncDataGenerator"
 		]

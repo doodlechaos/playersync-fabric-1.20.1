@@ -13,16 +13,11 @@ public abstract class MinecraftServerMixin {
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onTick(CallbackInfo ci){
-        // If we are in manual-time mode and no manual-tick has been requested,
-        // cancel the server’s normal tick.
-        if (PlayerSync.ManualTime && !PlayerSync.AllowServerTickOnce) {
+
+        //Never allow a server tick unless right after a client tick
+        if ((PlayerSync.Recording || PlayerSync.PlayingBack) && !PlayerSync.TickServerFlag) {
             ci.cancel();
             return;
         }
-
-        // If we get here and manual mode is true, it means PlayerSync.AllowServerTickOnce
-        // was set (manual tick requested). We let the tick happen, but clear the flag
-        // so it doesn’t keep ticking every frame.
-        PlayerSync.AllowServerTickOnce = false;
     }
 }
