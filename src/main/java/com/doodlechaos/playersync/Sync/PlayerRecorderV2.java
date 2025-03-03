@@ -1,9 +1,6 @@
 package com.doodlechaos.playersync.Sync;
 
-import com.doodlechaos.playersync.Sync.InputEventContainers.KeyboardEvent;
-import com.doodlechaos.playersync.Sync.InputEventContainers.MouseButtonEvent;
-import com.doodlechaos.playersync.Sync.InputEventContainers.MousePosEvent;
-import com.doodlechaos.playersync.Sync.InputEventContainers.MouseScrollEvent;
+import com.doodlechaos.playersync.Sync.InputEventContainers.*;
 import com.doodlechaos.playersync.utils.PlayerSyncFolderUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.Vec3d;
@@ -18,30 +15,27 @@ public class PlayerRecorderV2 {
 
     private static final List<PlayerKeyframeV2> recordedKeyframes = new ArrayList<>();
 
-    // Lists to record events between frames.
-    private static final List<MouseButtonEvent> recordedMouseButtonBuffer = new ArrayList<>();
-    private static final List<MouseScrollEvent> recordedMouseScrollBuffer = new ArrayList<>();
-    private static final List<MousePosEvent> recordedMousePosBuffer = new ArrayList<>();
-    private static final List<KeyboardEvent> recordedKeyboardBuffer = new ArrayList<>();
+    // Lists to record events between frames
+    private static final List<InputEvent> recordedInputsBuffer = new ArrayList<>();
 
     // Called from your mixin to record a mouse button event.
     public static void recordMouseButtonEvent(MouseButtonEvent event) {
-        recordedMouseButtonBuffer.add(event);
+        recordedInputsBuffer.add(event);
     }
 
     // Called from your mixin to record a mouse scroll event.
     public static void recordMouseScrollEvent(MouseScrollEvent event) {
-        recordedMouseScrollBuffer.add(event);
+        recordedInputsBuffer.add(event);
     }
 
     // Called from your mixin to record a mouse position event.
     public static void recordMousePosEvent(MousePosEvent event) {
-        recordedMousePosBuffer.add(event);
+        recordedInputsBuffer.add(event);
     }
 
     // Called from your mixin to record a keyboard event.
     public static void recordKeyboardEvent(KeyboardEvent event) {
-        recordedKeyboardBuffer.add(event);
+        recordedInputsBuffer.add(event);
     }
 
     public static List<PlayerKeyframeV2> getRecordedKeyframes() {
@@ -74,25 +68,18 @@ public class PlayerRecorderV2 {
                 playerPos,
                 client.player.getYaw(),
                 client.player.getPitch(),
-                new ArrayList<>(recordedMouseButtonBuffer),
-                new ArrayList<>(recordedMouseScrollBuffer),
-                new ArrayList<>(recordedMousePosBuffer),
-                new ArrayList<>(recordedKeyboardBuffer)
+                new ArrayList<>(recordedInputsBuffer)
         );
 
         // Add the new keyframe to our in-memory list.
         recordedKeyframes.add(keyframe);
-        LOGGER.info(keyframe.toString());
 
         clearRecordedInputsBuffer();
     }
 
     public static void clearRecordedInputsBuffer(){
         // Clear the recorded event lists so they don't accumulate events across frames.
-        recordedMouseButtonBuffer.clear();
-        recordedMouseScrollBuffer.clear();
-        recordedMousePosBuffer.clear();
-        recordedKeyboardBuffer.clear();
+        recordedInputsBuffer.clear();
     }
 
     public static void SaveRecToFile(String recName){

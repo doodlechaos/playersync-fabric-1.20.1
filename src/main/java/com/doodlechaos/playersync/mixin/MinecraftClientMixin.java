@@ -1,6 +1,7 @@
 package com.doodlechaos.playersync.mixin;
 
 import com.doodlechaos.playersync.PlayerSync;
+import com.doodlechaos.playersync.Sync.AudioSyncPlayer;
 import com.doodlechaos.playersync.Sync.PlayerRecorderV2;
 import com.doodlechaos.playersync.VideoRenderer;
 import net.minecraft.client.MinecraftClient;
@@ -8,6 +9,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
 
 @Mixin(MinecraftClient.class)
@@ -24,8 +27,7 @@ public class MinecraftClientMixin {
 
         if(PlayerSync.PlayingBack){
             PlayerSync.SimulateInputsFromKeyframe();
-/*            PlayerSync.SimulateKeystrokes();
-            PlayerSync.SimulateMouse();*/
+            AudioSyncPlayer.syncAudio();
         }
     }
 
