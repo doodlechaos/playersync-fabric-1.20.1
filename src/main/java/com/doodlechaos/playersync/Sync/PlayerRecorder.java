@@ -27,14 +27,14 @@ public class PlayerRecorder {
      * Call this once during initialization.
      */
     public static void initMouseScrollCallback() {
-        if (!scrollCallbackInitialized) {
+/*        if (!scrollCallbackInitialized) {
             long windowHandle = MinecraftClient.getInstance().getWindow().getHandle();
             GLFW.glfwSetScrollCallback(windowHandle, (window, xoffset, yoffset) -> {
                 scrollOffsetX += xoffset;
                 scrollOffsetY += yoffset;
             });
             scrollCallbackInitialized = true;
-        }
+        }*/
     }
 
     /**

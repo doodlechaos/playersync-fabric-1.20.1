@@ -1,19 +1,13 @@
 package com.doodlechaos.playersync.mixin;
 
 import com.doodlechaos.playersync.PlayerSync;
-import com.doodlechaos.playersync.Sync.PlayerKeyframe;
 import com.doodlechaos.playersync.Sync.PlayerRecorder;
 import net.minecraft.client.MinecraftClient;
-import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin {
@@ -27,11 +21,9 @@ public class MinecraftClientMixin {
             return;
         }
 
-/*        if(PlayerSync.PlayingBack){
-        }*/
-
         if(PlayerSync.PlayingBack){
             PlayerSync.SimulateKeystrokes();
+            PlayerSync.SimulateMouse();
         }
     }
 
@@ -46,10 +38,6 @@ public class MinecraftClientMixin {
             PlayerSync.setPlayerFromKeyframe();
             PlayerSync.playbackIndex++;
         }
-/*        if(PlayerSync.PlayingBack){
-            PlayerSync.setPlayerFromKeyframe();
-            PlayerSync.playbackIndex++;
-        }*/
 
     }
 

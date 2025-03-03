@@ -3,16 +3,16 @@
   "package": "com.doodlechaos.playersync.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "MinecraftClientMixin",
-    "MinecraftServerMixin",
     "GameRendererMixin",
     "KeyBindingMixin",
+    "MinecraftClientMixin",
+    "MinecraftServerMixin",
     "RenderTickCounterMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
-
+    "MouseAccessor"
   ]
 }
