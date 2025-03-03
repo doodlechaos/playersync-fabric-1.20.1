@@ -1,3 +1,4 @@
+/*
 package com.doodlechaos.playersync.Sync;
 
 import net.minecraft.util.math.Vec3d;
@@ -19,7 +20,8 @@ public class PlayerKeyframe {
     public final double scrollX;
     public final double scrollY;
 
-    /**
+    */
+/**
      * Constructs a PlayerKeyframe with both player and mouse data.
      *
      * @param frame            The frame number.
@@ -32,7 +34,8 @@ public class PlayerKeyframe {
      * @param mouseButtons     List of held mouse button codes.
      * @param scrollX          Accumulated scroll offset in the X direction.
      * @param scrollY          Accumulated scroll offset in the Y direction.
-     */
+     *//*
+
     public PlayerKeyframe(long frame, Vec3d playerPos, float playerYaw, float playerPitch, List<Integer> keyEvents,
                           double mouseX, double mouseY, List<Integer> mouseButtons, double scrollX, double scrollY) {
         this.frame = frame;
@@ -47,12 +50,14 @@ public class PlayerKeyframe {
         this.scrollY = scrollY;
     }
 
-    /**
+    */
+/**
      * Constructs a PlayerKeyframe from a single-line string.
      * Expected format:
      * frame=123|playerPos=[1.234,2.345,3.456]|playerRotation=[45.0,30.0]|heldKeyboardKeys=[32,17]
      * |mousePos=[456.78,123.45]|heldMouseButtons=[0,1]|scroll=[0.0,0.0]
-     */
+     *//*
+
     public PlayerKeyframe(String line) {
         String[] parts = line.split("\\|");
         if (parts.length != 7) {
@@ -151,12 +156,14 @@ public class PlayerKeyframe {
         this.scrollY = Double.parseDouble(scrollValues[1].trim());
     }
 
-    /**
+    */
+/**
      * Serializes the PlayerKeyframe to a single line of text with full precision.
      * Format:
      * frame=123|playerPos=[1.234,2.345,3.456]|playerRotation=[45.0,30.0]|heldKeyboardKeys=[32,17]
      * |mousePos=[456.78,123.45]|heldMouseButtons=[0,1]|scroll=[0.0,0.0]
-     */
+     *//*
+
     public String ToLine() {
         String posString = playerPos.x + "," + playerPos.y + "," + playerPos.z;
         String rotString = playerYaw + "," + playerPitch;
@@ -202,3 +209,4 @@ public class PlayerKeyframe {
     }
 
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package com.doodlechaos.playersync.Sync;
 
 import com.doodlechaos.playersync.PlayerSync;
@@ -5,12 +6,14 @@ import com.doodlechaos.playersync.utils.PlayerSyncFolderUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWScrollCallback;
 import org.lwjgl.system.MemoryStack;
 
 import java.io.*;
 import java.nio.DoubleBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
 public class PlayerRecorder {
 
@@ -20,30 +23,40 @@ public class PlayerRecorder {
     // Variables to accumulate scroll events.
     private static double scrollOffsetX = 0;
     private static double scrollOffsetY = 0;
-    private static boolean scrollCallbackInitialized = false;
 
-    /**
+    */
+/**
      * Initializes the GLFW scroll callback to capture scroll events.
      * Call this once during initialization.
-     */
+     *//*
+
+    private static GLFWScrollCallback originalScrollCallback = null;
+
     public static void initMouseScrollCallback() {
-/*        if (!scrollCallbackInitialized) {
-            long windowHandle = MinecraftClient.getInstance().getWindow().getHandle();
-            GLFW.glfwSetScrollCallback(windowHandle, (window, xoffset, yoffset) -> {
-                scrollOffsetX += xoffset;
-                scrollOffsetY += yoffset;
-            });
-            scrollCallbackInitialized = true;
-        }*/
+        long windowHandle = MinecraftClient.getInstance().getWindow().getHandle();
+        // Capture the existing scroll callback (if any) and install our own.
+        originalScrollCallback = GLFW.glfwSetScrollCallback(windowHandle, (window, xoffset, yoffset) -> {
+            // Record your scroll offsets.
+            scrollOffsetX += xoffset;
+            scrollOffsetY += yoffset;
+            // Forward the event to the original callback if it exists.
+            if (originalScrollCallback != null) {
+                originalScrollCallback.invoke(window, xoffset, yoffset);
+            }
+        });
+
+        LOGGER.info("Done initializing mouse scroll detection callback");
     }
 
-    /**
+    */
+/**
      * Records a new keyframe that captures both player and mouse data.
-     */
+     *//*
+
     public static void RecordKeyframe(){
         MinecraftClient client = MinecraftClient.getInstance();
         if(client.player == null) {
-            PlayerSync.LOGGER.error("No player to record keyframe");
+            LOGGER.error("No player to record keyframe");
             return;
         }
 
@@ -70,12 +83,14 @@ public class PlayerRecorder {
 
         // Add the new keyframe to our in-memory list.
         recordedKeyframes.add(keyframe);
-        PlayerSync.LOGGER.info(keyframe.toString());
+        LOGGER.info(keyframe.toString());
     }
 
-    /**
+    */
+/**
      * Iterates over possible key codes and returns a list of currently held keyboard keys.
-     */
+     *//*
+
     private static List<Integer> getHeldKeyboardKeyCodes() {
         long windowHandle = MinecraftClient.getInstance().getWindow().getHandle();
         List<Integer> heldKeys = new ArrayList<>();
@@ -87,11 +102,13 @@ public class PlayerRecorder {
         return heldKeys;
     }
 
-    /**
+    */
+/**
      * Captures current mouse input, including position, held buttons, and scroll offsets.
      *
      * @return A MouseInput object containing the current mouse state.
-     */
+     *//*
+
     public static MouseInputData getMouseInput() {
         MinecraftClient client = MinecraftClient.getInstance();
         long windowHandle = client.getWindow().getHandle();
@@ -114,7 +131,7 @@ public class PlayerRecorder {
             }
         }
 
-        // Capture current scroll offsets and reset them for the next frame.
+        // TODO: Capture current scroll offsets and reset them for the next frame.
         double currentScrollX = scrollOffsetX;
         double currentScrollY = scrollOffsetY;
         scrollOffsetX = 0;
@@ -138,9 +155,9 @@ public class PlayerRecorder {
                 writer.write(keyframe.ToLine());
                 writer.newLine();
             }
-            PlayerSync.LOGGER.info("Recording saved to file: " + recFile.getAbsolutePath());
+            LOGGER.info("Recording saved to file: " + recFile.getAbsolutePath());
         } catch (IOException e) {
-            PlayerSync.LOGGER.error("Error saving recording to file: " + recFile.getAbsolutePath(), e);
+            LOGGER.error("Error saving recording to file: " + recFile.getAbsolutePath(), e);
         }
     }
 
@@ -155,16 +172,17 @@ public class PlayerRecorder {
                         PlayerKeyframe keyframe = new PlayerKeyframe(line);
                         recordedKeyframes.add(keyframe);
                     } catch (IllegalArgumentException e) {
-                        PlayerSync.LOGGER.error("Error parsing keyframe: " + line, e);
+                        LOGGER.error("Error parsing keyframe: " + line, e);
                     }
                 }
             }
-            PlayerSync.LOGGER.info("Recording loaded from file: " + recFile.getAbsolutePath());
+            LOGGER.info("Recording loaded from file: " + recFile.getAbsolutePath());
         } catch (IOException e) {
-            PlayerSync.LOGGER.error("Error loading recording from file: " + recFile.getAbsolutePath(), e);
+            LOGGER.error("Error loading recording from file: " + recFile.getAbsolutePath(), e);
         }
     }
 
 
 
 }
+*/

@@ -1,7 +1,7 @@
 package com.doodlechaos.playersync.command;
 
 import com.doodlechaos.playersync.PlayerSync;
-import com.doodlechaos.playersync.Sync.PlayerRecorder;
+import com.doodlechaos.playersync.Sync.PlayerRecorderV2;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.server.command.CommandManager;
@@ -24,7 +24,7 @@ public class RecordCommands {
         dispatcher.register(literal("clearRec")
                 // No argument version – uses default value 10
                 .executes(ctx -> {
-                    PlayerRecorder.clearRecordedKeyframes();
+                    PlayerRecorderV2.clearRecordedKeyframes();
                     ctx.getSource().sendMessage(Text.literal("Cleared recorded keyframes"));
                     return 1;
                 })
@@ -35,7 +35,7 @@ public class RecordCommands {
                     .executes(ctx -> {
                         String filename = StringArgumentType.getString(ctx, "filename");
 
-                        PlayerRecorder.SaveRecToFile(filename);
+                        PlayerRecorderV2.SaveRecToFile(filename);
                         ctx.getSource().sendMessage(Text.literal("Saved " + filename));
                         return 1;
                     })
@@ -47,7 +47,7 @@ public class RecordCommands {
                         .executes(ctx -> {
                             String filename = StringArgumentType.getString(ctx, "filename");
 
-                            PlayerRecorder.LoadRecFromFile(filename);
+                            PlayerRecorderV2.LoadRecFromFile(filename);
                             ctx.getSource().sendMessage(Text.literal("Loaded " + filename));
                             return 1;
                         })
@@ -56,7 +56,7 @@ public class RecordCommands {
 
         dispatcher.register(literal("playRec")
                 .executes(ctx -> {
-                    if (!PlayerRecorder.getRecordedKeyframes().isEmpty()) {
+                    if (!PlayerRecorderV2.getRecordedKeyframes().isEmpty()) {
                         PlayerSync.PlayingBack = !PlayerSync.PlayingBack;
                         PlayerSync.playbackIndex = 0;
                         ctx.getSource().sendMessage(Text.literal("Starting playback"));

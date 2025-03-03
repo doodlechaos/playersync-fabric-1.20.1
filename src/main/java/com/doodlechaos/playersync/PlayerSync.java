@@ -1,8 +1,13 @@
 package com.doodlechaos.playersync;
 
-import com.doodlechaos.playersync.Sync.PlayerKeyframe;
-import com.doodlechaos.playersync.Sync.PlayerRecorder;
+import com.doodlechaos.playersync.Sync.InputEventContainers.KeyboardEvent;
+import com.doodlechaos.playersync.Sync.InputEventContainers.MouseButtonEvent;
+import com.doodlechaos.playersync.Sync.InputEventContainers.MousePosEvent;
+import com.doodlechaos.playersync.Sync.InputEventContainers.MouseScrollEvent;
+import com.doodlechaos.playersync.Sync.PlayerKeyframeV2;
+import com.doodlechaos.playersync.Sync.PlayerRecorderV2;
 import com.doodlechaos.playersync.command.RecordCommands;
+import com.doodlechaos.playersync.command.RenderCommands;
 import com.doodlechaos.playersync.mixin.MouseAccessor;
 import net.fabricmc.api.ModInitializer;
 
@@ -14,14 +19,12 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.server.MinecraftServer;
 
 import net.minecraft.text.Text;
-import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class PlayerSync implements ModInitializer {
 	public static final String MOD_ID = "playersync";
@@ -29,11 +32,12 @@ public class PlayerSync implements ModInitializer {
 
 	public static boolean Recording = false;
 	public static boolean PlayingBack = false;
+
 	public static int playbackIndex = 0;
 
 
 	public static int GetRecFrame(){
-		return PlayerRecorder.getRecordedKeyframes().size();
+		return PlayerRecorderV2.getRecordedKeyframes().size();
 	};
 
 	public static boolean TickServerFlag = false;
@@ -61,6 +65,7 @@ public class PlayerSync implements ModInitializer {
 	private void registerCommands(){
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryaccess, environment) -> {
 			RecordCommands.registerRecordCommands(dispatcher);
+			RenderCommands.registerRenderCommands(dispatcher);
 		});
 
 		LOGGER.info("Done registering commands");
@@ -72,8 +77,8 @@ public class PlayerSync implements ModInitializer {
 		ServerTickEvents.END_SERVER_TICK.register(this::onEndServerTick);
 	}
 
-	public static PlayerKeyframe GetCurKeyframe(){
-		List<PlayerKeyframe> frames = PlayerRecorder.getRecordedKeyframes();
+	public static PlayerKeyframeV2 GetCurKeyframe(){
+		List<PlayerKeyframeV2> frames = PlayerRecorderV2.getRecordedKeyframes();
 
 		if(playbackIndex < 0 || playbackIndex >= frames.size())
 			return null;
@@ -88,25 +93,30 @@ public class PlayerSync implements ModInitializer {
 		if(client.player == null)
 			return;
 
-		if(playbackIndex >= PlayerRecorder.getRecordedKeyframes().size()){
+		if(playbackIndex >= PlayerRecorderV2.getRecordedKeyframes().size()){
 			// End of playback: release any keys that remain pressed.
-			for (int key : lastSimulatedKeys) {
+/*			for (int key : lastSimulatedKeys) {
 				simulateKeyEvent(key, GLFW.GLFW_RELEASE);
-			}
+			}*/
 			lastSimulatedKeys.clear();
 			PlayingBack = false;
 			playbackIndex = 0;
 			client.player.sendMessage(Text.literal("Playback complete"), false);
+
+			if(VideoRenderer.isRendering()){
+				VideoRenderer.FinishRendering();
+			}
+
 			return;
 		}
 
-		PlayerKeyframe keyframe = GetCurKeyframe();
+		PlayerKeyframeV2 keyframe = GetCurKeyframe();
 
 		if(keyframe == null)
 			return;
 
 		//if(playbackIndex % 60 == 0){
-			client.player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
+		client.player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
 		//}
 		client.player.setYaw(keyframe.playerYaw);
 		client.player.setPitch(keyframe.playerPitch);
@@ -128,9 +138,46 @@ public class PlayerSync implements ModInitializer {
 		PlayerSync.TickServerFlag = false;
 	}
 
-	public static void SimulateKeystrokes(){
+	public static void SimulateInputsFromKeyframe(){
+		PlayerKeyframeV2 keyframe = GetCurKeyframe();
+
+		if(keyframe == null)
+			return;
+
+		MinecraftClient client = MinecraftClient.getInstance();
+		long window = client.getWindow().getHandle();
+
+		// Simulate keyboard events.
+		for (KeyboardEvent ke : keyframe.recordedKeyboardEvents) {
+			client.keyboard.onKey(window, ke.key, ke.scancode, ke.action, ke.modifiers);
+			LOGGER.info("Simulated keyboard event: key " + ke.key + ", action " + ke.action);
+		}
+
+		// Simulate mouse position events.
+		for (MousePosEvent mpe : keyframe.recordedMousePosEvents) {
+			// Assuming you have an accessor method for mouse position events.
+			((MouseAccessor) client.mouse).callOnCursorPos(window, mpe.x, mpe.y);
+			LOGGER.info("Simulated mouse position event: x " + mpe.x + ", y " + mpe.y);
+		}
+
+		// Simulate mouse button events.
+		for (MouseButtonEvent mbe : keyframe.recordedMouseButtonEvents) {
+			((MouseAccessor) client.mouse).callOnMouseButton(window, mbe.button, mbe.action, mbe.mods);
+			LOGGER.info("Simulated mouse button event: button " + mbe.button + ", action " + mbe.action);
+		}
+
+		// Simulate mouse scroll events.
+		for (MouseScrollEvent mse : keyframe.recordedMouseScrollEvents) {
+			((MouseAccessor) client.mouse).callOnMouseScroll(window, mse.horizontal, mse.vertical);
+			LOGGER.info("Simulated mouse scroll event: horizontal " + mse.horizontal + ", vertical " + mse.vertical);
+		}
+
+
+	}
+
+/*	public static void SimulateKeystrokes(){
 		//Simulate the pressed keys for the current frame here so it's early enough in the loop that they can get picked up by polling for this frame.
-		PlayerKeyframe keyframe = GetCurKeyframe();
+		PlayerKeyframeV2 keyframe = GetCurKeyframe();
 
 		if(keyframe == null)
 			return;
@@ -169,10 +216,18 @@ public class PlayerSync implements ModInitializer {
 	}
 
 
+
 	public static void SimulateMouse() {
 		// Get the current keyframe (assumes keyframe has heldMouseButtons)
-		PlayerKeyframe keyframe = GetCurKeyframe();
+		PlayerKeyframeV2 keyframe = GetCurKeyframe();
 		if (keyframe == null) return;
+
+		MinecraftClient client = MinecraftClient.getInstance();
+		long window = client.getWindow().getHandle();
+
+		// Simulate the scroll wheel event.
+		((MouseAccessor) client.mouse).callOnMouseScroll(window, keyframe.scrollX, keyframe.scrollY);
+		LOGGER.info("Scrolling with offsets X: " + keyframe.scrollX + " Y: " + keyframe.scrollY + " on frame: " + playbackIndex);
 
 		// Assume keyframe.heldMouseButtons is a List<Integer> for pressed mouse buttons
 		List<Integer> currentMouseButtons = keyframe.heldMouseButtons;
@@ -200,23 +255,7 @@ public class PlayerSync implements ModInitializer {
 	public static void simulateMouseEvent(int button, int action) {
 		MinecraftClient client = MinecraftClient.getInstance();
 		long window = client.getWindow().getHandle();
-
 		// Cast client.mouse to our MouseAccessor interface and call the private method.
 		((MouseAccessor) client.mouse).callOnMouseButton(window, button, action, 0);
-
-/*		// We want to set the "pressed" state on the relevant KeyBinding
-		// based on whether action == GLFW.GLFW_PRESS or GLFW.GLFW_RELEASE.
-		boolean pressed = (action == GLFW.GLFW_PRESS);
-
-		if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-			// Simulate left click
-			client.options.attackKey.setPressed(pressed);
-		} else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-			// Simulate right click
-			client.options.useKey.setPressed(pressed);
-		} else if (button == GLFW.GLFW_MOUSE_BUTTON_MIDDLE) {
-			// Simulate middle click (pick block)
-			client.options.pickItemKey.setPressed(pressed);
-		}*/
-	}
+	}*/
 }

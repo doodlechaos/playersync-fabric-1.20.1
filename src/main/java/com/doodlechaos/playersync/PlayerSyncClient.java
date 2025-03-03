@@ -1,12 +1,26 @@
 package com.doodlechaos.playersync;
 
-import com.doodlechaos.playersync.Sync.PlayerRecorder;
 import net.fabricmc.api.ClientModInitializer;
+import net.minecraft.client.MinecraftClient;
 
 public class PlayerSyncClient implements ClientModInitializer {
+
     @Override
     public void onInitializeClient() {
-        // Initialize the scroll callback after the client window is ready
-        PlayerRecorder.initMouseScrollCallback();
+        //scheduleScrollCallbackRegistration();
     }
+
+
+/*    private void scheduleScrollCallbackRegistration() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        client.execute(() -> {
+            if (client.getWindow() != null && client.getWindow().getHandle() != 0) {
+                // Window is ready; initialize the scroll callback.
+                PlayerRecorder.initMouseScrollCallback();
+            } else {
+                // Window not ready; reschedule for the next tick.
+                scheduleScrollCallbackRegistration();
+            }
+        });
+    }*/
 }

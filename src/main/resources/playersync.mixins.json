@@ -13,6 +13,8 @@
     "defaultRequire": 1
   },
   "client": [
-    "MouseAccessor"
+    "KeyboardMixin",
+    "MouseAccessor",
+    "MouseMixin"
   ]
 }
