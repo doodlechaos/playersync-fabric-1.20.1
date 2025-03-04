@@ -12,12 +12,16 @@ import net.minecraft.util.math.Vec3d;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
 public class PlayerTimeline {
 
+    public static boolean startRecNextTick = false;
     private static boolean recording = false;
+
+    public static boolean startPlaybackNextTick = false;
     private static boolean playingBack = false;
 
     public static int GetRecFrame(){
@@ -31,8 +35,8 @@ public class PlayerTimeline {
 
     public static void setRecording(boolean value)
     {
-        //TODO: I think we need to wait for the next game tick before we actually start recording for determinism
         recording = value;
+        playheadIndex = GetRecFrame();
         onStateUpdate();
     }
 
@@ -81,6 +85,7 @@ public class PlayerTimeline {
 
     // Called from your mixin to record a keyboard event.
     public static void recordKeyboardEvent(KeyboardEvent event) {
+        LOGGER.info("recorded keyboard event");
         recordedInputsBuffer.add(event);
     }
 
@@ -95,7 +100,7 @@ public class PlayerTimeline {
     /**
      * Records a new keyframe that captures both player and input data.
      */
-    public static void RecordKeyframe(){
+    public static void CreateKeyframe(){
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayerEntity player = client.player;
         if(player == null) {
@@ -103,8 +108,11 @@ public class PlayerTimeline {
             return;
         }
 
-        float partialTick = client.getTickDelta();
-        Vec3d lerpedPlayerPos = player.getLerpedPos(partialTick);
+        float tickDelta = client.getTickDelta();
+        if(playheadIndex == 0){
+            LOGGER.error("playheadIndex: " + playheadIndex + " tickDelta: " + tickDelta);
+        }
+        Vec3d lerpedPlayerPos = player.getLerpedPos(tickDelta);
 
         // Use the number of keyframes as the frame number (or use your own frame counter if available)
         long frameNumber = recordedKeyframes.size();
@@ -112,9 +120,10 @@ public class PlayerTimeline {
         // Create a merged keyframe with both keyboard and mouse inputs.
         PlayerKeyframe keyframe = new PlayerKeyframe(
                 frameNumber,
+                tickDelta,
                 lerpedPlayerPos,
-                player.getYaw(partialTick),//lerpedYaw,//client.player.getYaw(),
-                player.getPitch(partialTick),//lerpedPitch,//client.player.getPitch(),
+                player.getYaw(tickDelta),//lerpedYaw,//client.player.getYaw(),
+                player.getPitch(tickDelta),//lerpedPitch,//client.player.getPitch(),
                 new ArrayList<>(recordedInputsBuffer)
         );
 
@@ -144,14 +153,17 @@ public class PlayerTimeline {
     public static void setPlayerFromKeyframe(){
 
         MinecraftClient client = MinecraftClient.getInstance();
+        ClientPlayerEntity player = client.player;
 
-        if(client.player == null)
+        float tickDelta = client.getTickDelta();
+
+
+        if(player == null)
             return;
 
         if(playheadIndex >= PlayerTimeline.getRecordedKeyframes().size()){
-            setPlayingBack(false, playheadIndex);
-            playheadIndex = 0;
-            client.player.sendMessage(Text.literal("Playback complete"), false);
+            setPlayingBack(false, 0);
+            player.sendMessage(Text.literal("Playback complete"), false);
 
             if(VideoRenderer.isRendering()){
                 VideoRenderer.FinishRendering();
@@ -165,11 +177,53 @@ public class PlayerTimeline {
         if(keyframe == null)
             return;
 
-        if(playheadIndex == 0){
-            client.player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
-            client.player.setYaw(keyframe.playerYaw);
-            client.player.setPitch(keyframe.playerPitch);
-        }
+        //if(playheadIndex == 0){
+            player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
+            player.setYaw(keyframe.playerYaw);
+            player.setPitch(keyframe.playerPitch);
+       // }
+
+/*        Vec3d lerpedPos = player.getLerpedPos(tickDelta);
+        boolean tickDeltaMismatch = tickDelta != keyframe.tickDelta;
+        boolean positionMismatch = !lerpedPos.equals(keyframe.playerPos);
+        boolean yawMismatch = player.getYaw(tickDelta) != keyframe.playerYaw;
+        boolean pitchMismatch = player.getPitch(tickDelta) != keyframe.playerPitch;
+
+        if (tickDeltaMismatch || positionMismatch || yawMismatch || pitchMismatch) {
+            StringBuilder diffLog = new StringBuilder("DETECTED NON-DETERMINISM. PlayheadIndex: " + playheadIndex + ". ");
+
+            if (tickDeltaMismatch) {
+                diffLog.append(keyframe.tickDelta).append(" != ").append(tickDelta).append(". ");
+            }
+
+            double deltaX = 0, deltaY = 0, deltaZ = 0;
+            if (positionMismatch) {
+                deltaX = Math.abs(lerpedPos.x - keyframe.playerPos.x);
+                deltaY = Math.abs(lerpedPos.y - keyframe.playerPos.y);
+                deltaZ = Math.abs(lerpedPos.z - keyframe.playerPos.z);
+                diffLog.append("Pos delta -> X: ").append(deltaX)
+                        .append(", Y: ").append(deltaY)
+                        .append(", Z: ").append(deltaZ).append(". ");
+            }
+
+            if (yawMismatch) {
+                double yawDelta = Math.abs(player.getYaw(tickDelta) - keyframe.playerYaw);
+                diffLog.append("Yaw delta: ").append(yawDelta).append(". ");
+            }
+
+            if (pitchMismatch) {
+                double pitchDelta = Math.abs(player.getPitch(tickDelta) - keyframe.playerPitch);
+                diffLog.append("Pitch delta: ").append(pitchDelta).append(". ");
+            }
+
+            LOGGER.info(diffLog.toString());
+
+            // If the position difference exceeds 0.1 on any axis, force an update.
+            if (deltaX > 0.1 || deltaY > 0.1 || deltaZ > 0.1) {
+                LOGGER.error("Player position off by more than 0.1 on at least one axis. Forcing updatePosition to keyframe position: " + keyframe.playerPos);
+                player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
+            }
+        }*/
 
     }
 

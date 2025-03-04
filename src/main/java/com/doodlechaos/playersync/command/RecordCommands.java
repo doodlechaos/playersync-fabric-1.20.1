@@ -15,8 +15,16 @@ public class RecordCommands {
         dispatcher.register(literal("rec")
                 // No argument version – uses default value 10
                 .executes(ctx -> {
-                    PlayerTimeline.setRecording(!PlayerTimeline.isRecording());
-                    ctx.getSource().sendMessage(Text.literal("Set Recording: " + PlayerTimeline.isRecording()));
+                    if(PlayerTimeline.isRecording())
+                    {
+                        PlayerTimeline.setRecording(false);
+                        ctx.getSource().sendMessage(Text.literal("Stopped Recording: " + PlayerTimeline.isRecording()));
+                    }
+                    else{
+                        PlayerTimeline.startRecNextTick = true;
+                        ctx.getSource().sendMessage(Text.literal("Starting Recording: " + PlayerTimeline.isRecording()));
+                    }
+
                     return 1;
                 }));
 
@@ -57,7 +65,7 @@ public class RecordCommands {
                 .executes(ctx -> {
                     if (!PlayerTimeline.getRecordedKeyframes().isEmpty()) {
 
-                        PlayerTimeline.setPlayingBack(!PlayerTimeline.isPlayingBack(), 0);
+                        PlayerTimeline.startPlaybackNextTick = true;
 
                         ctx.getSource().sendMessage(Text.literal("Starting playback"));
                     } else {

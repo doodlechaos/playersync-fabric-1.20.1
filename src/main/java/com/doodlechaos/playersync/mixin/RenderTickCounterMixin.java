@@ -26,13 +26,20 @@ public class RenderTickCounterMixin {
             // Set the last frame duration to our constant value.
             this.lastFrameDuration = constantFrameDuration;
 
-            if(PlayerTimeline.playheadIndex % 20 == 0) //Reset the tick delta so it is deterministic
-                this.tickDelta = 0;
+            //if(PlayerTimeline.playheadIndex % 20 == 0) //Reset the tick delta so it is deterministic
+            //    this.tickDelta = 0;
 
+            this.tickDelta = (PlayerTimeline.playheadIndex % 3) / 3.0f;;
+
+            int ticksToAdvance = 0;
+            if(tickDelta == 0 || tickDelta == 1)
+            {
+                ticksToAdvance = 1;
+            }
             // Update tickDelta accordingly.
-            this.tickDelta += constantFrameDuration;
-            int ticksToAdvance = (int)this.tickDelta;
-            this.tickDelta -= ticksToAdvance;
+            //this.tickDelta += constantFrameDuration;
+            //int ticksToAdvance = (int)this.tickDelta;
+            //this.tickDelta -= ticksToAdvance;
 
             // Update the previous time to the current time so that the normal delta calculation is skipped.
             this.prevTimeMillis = timeMillis;

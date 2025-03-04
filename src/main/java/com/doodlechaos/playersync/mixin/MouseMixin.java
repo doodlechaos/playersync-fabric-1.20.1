@@ -37,7 +37,7 @@ public class MouseMixin {
             return;
 
         // Record the cursor position event.
-        //PlayerTimeline.recordMousePosEvent(new MousePosEvent(x, y));
+        PlayerTimeline.recordMousePosEvent(new MousePosEvent(x, y));
     }
 
 }

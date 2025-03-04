@@ -9,6 +9,7 @@ import java.util.List;
 public class PlayerKeyframe {
 
     public final long frame;
+    public final float tickDelta;
     public final Vec3d playerPos;
     public float playerYaw;
     public float playerPitch;
@@ -23,8 +24,9 @@ public class PlayerKeyframe {
      * @param playerPitch The player's pitch.
      * @param inputEvents The list of recorded input events.
      */
-    public PlayerKeyframe(long frame, Vec3d playerPos, float playerYaw, float playerPitch, List<InputEvent> inputEvents) {
+    public PlayerKeyframe(long frame, float tickDelta, Vec3d playerPos, float playerYaw, float playerPitch, List<InputEvent> inputEvents) {
         this.frame = frame;
+        this.tickDelta = tickDelta;
         this.playerPos = playerPos;
         this.playerYaw = playerYaw;
         this.playerPitch = playerPitch;
@@ -39,6 +41,7 @@ public class PlayerKeyframe {
     public PlayerKeyframe(String line) {
         String[] parts = line.split("\\|");
         long frame = 0;
+        float tickDelta = 0;
         Vec3d pos = null;
         float yaw = 0;
         float pitch = 0;
@@ -47,7 +50,10 @@ public class PlayerKeyframe {
         for (String part : parts) {
             if (part.startsWith("frame=")) {
                 frame = Long.parseLong(part.substring("frame=".length()));
-            } else if (part.startsWith("playerPos=")) {
+            }else if(part.startsWith("tickDelta=")){
+                tickDelta = Float.parseFloat(part.substring("tickDelta=".length()));
+            }
+            else if (part.startsWith("playerPos=")) {
                 int start = part.indexOf('[');
                 int end = part.indexOf(']');
                 String[] coords = part.substring(start + 1, end).split(",");
@@ -72,6 +78,7 @@ public class PlayerKeyframe {
             }
         }
         this.frame = frame;
+        this.tickDelta = tickDelta;
         this.playerPos = pos;
         this.playerYaw = yaw;
         this.playerPitch = pitch;
@@ -86,6 +93,7 @@ public class PlayerKeyframe {
     public String ToLine() {
         StringBuilder sb = new StringBuilder();
         sb.append("frame=").append(frame);
+        sb.append("|tickDelta=").append(tickDelta);
         sb.append("|playerPos=[").append(playerPos.x).append(",").append(playerPos.y).append(",").append(playerPos.z).append("]");
         sb.append("|playerYaw=").append(playerYaw);
         sb.append("|playerPitch=").append(playerPitch);
