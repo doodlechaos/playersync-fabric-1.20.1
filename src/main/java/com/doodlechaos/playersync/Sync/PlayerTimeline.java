@@ -85,7 +85,7 @@ public class PlayerTimeline {
 
     // Called from your mixin to record a keyboard event.
     public static void recordKeyboardEvent(KeyboardEvent event) {
-        LOGGER.info("recorded keyboard event");
+        LOGGER.info("recorded keyboard event on frame: " + PlayerTimeline.playheadIndex);
         recordedInputsBuffer.add(event);
     }
 
@@ -181,9 +181,9 @@ public class PlayerTimeline {
             player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
             player.setYaw(keyframe.playerYaw);
             player.setPitch(keyframe.playerPitch);
-       // }
-
-/*        Vec3d lerpedPos = player.getLerpedPos(tickDelta);
+        //}
+/*
+       Vec3d lerpedPos = player.getLerpedPos(tickDelta);
         boolean tickDeltaMismatch = tickDelta != keyframe.tickDelta;
         boolean positionMismatch = !lerpedPos.equals(keyframe.playerPos);
         boolean yawMismatch = player.getYaw(tickDelta) != keyframe.playerYaw;
@@ -239,7 +239,6 @@ public class PlayerTimeline {
         for (InputEvent ie : keyframe.recordedInputEvents) {
             ie.simulate(window, client);
         }
-
     }
 
 

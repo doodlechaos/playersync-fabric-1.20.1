@@ -1,6 +1,7 @@
 package com.doodlechaos.playersync.Sync.InputEventContainers;
 
 import com.doodlechaos.playersync.PlayerSync;
+import com.doodlechaos.playersync.Sync.PlayerTimeline;
 
 public class KeyboardEvent extends InputEvent {
     public final int key;
@@ -44,6 +45,6 @@ public class KeyboardEvent extends InputEvent {
     @Override
     public void simulate(long window, net.minecraft.client.MinecraftClient client) {
         client.keyboard.onKey(window, key, scancode, action, modifiers);
-        PlayerSync.LOGGER.info("Simulated keyboard event: key " + key + ", action " + action);
+        PlayerSync.LOGGER.info("Simulated keyboard event on frame: " + PlayerTimeline.playheadIndex + " key " + key + ", action " + action);
     }
 }
