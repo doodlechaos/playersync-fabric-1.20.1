@@ -1,6 +1,5 @@
 package com.doodlechaos.playersync.Sync;
 
-import com.doodlechaos.playersync.PlayerSync;
 import org.lwjgl.openal.AL10;
 import org.lwjgl.system.MemoryUtil;
 
@@ -14,7 +13,7 @@ import java.nio.ShortBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class AudioSyncPlayer {
+public class AudioSync {
 
     // Constant for sample offset property (in frames)
     private static final int AL_SEC_OFFSET = 0x1024;
@@ -33,6 +32,11 @@ public class AudioSyncPlayer {
      * @return true if loading succeeded, false otherwise
      */
     public static boolean loadAudio(String filePath) {
+
+        if (loaded) {    // If an audio file is already loaded, clean up its resources first.
+            cleanup();
+        }
+
         ByteBuffer fileBuffer = null;
         try {
             // Read the entire file into a byte array and allocate a direct ByteBuffer
@@ -103,24 +107,20 @@ public class AudioSyncPlayer {
         }
     }
 
-    /**
-     * Plays the loaded audio file.
-     */
-    public static void playAudio() {
+    public static void setPlaying(boolean shouldPlay){
         if (!loaded) {
             System.err.println("Audio not loaded. Call loadAudio() first.");
             return;
         }
-        AL10.alSourcePlay(sourceId);
+
+        if (shouldPlay && AL10.alGetSourcei(sourceId, AL10.AL_SOURCE_STATE) != AL10.AL_PLAYING) {
+            AL10.alSourcePlay(sourceId);
+        }
+        if(!shouldPlay && AL10.alGetSourcei(sourceId, AL10.AL_SOURCE_STATE) == AL10.AL_PLAYING){
+            AL10.alSourcePause(sourceId);
+        }
     }
 
-    public static void pauseAudio(){
-        if (!loaded) {
-            System.err.println("Audio not loaded. Call loadAudio() first.");
-            return;
-        }
-        AL10.alSourcePause(sourceId);
-    }
     public static float getCurrentPlayheadTime() {
         if (!loaded) {
             return 0f;
@@ -128,6 +128,7 @@ public class AudioSyncPlayer {
         return AL10.alGetSourcef(sourceId, AL_SEC_OFFSET);
     }
 
+    //Called every frame we're playing back or recording
     public static void syncAudio(){
 
         // Check if the audio is playing
@@ -137,7 +138,8 @@ public class AudioSyncPlayer {
             return;
         }
 
-        float expectedTime = PlayerSync.playbackIndex / 60.0f;
+        float expectedTime = PlayerTimeline.playheadIndex / 60.0f;
+
         float currAudioTime = getCurrentPlayheadTime();
         if(Math.abs(expectedTime - currAudioTime) > 0.0333f) // 2/60th of a second
         {

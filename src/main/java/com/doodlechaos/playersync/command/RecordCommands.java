@@ -1,7 +1,6 @@
 package com.doodlechaos.playersync.command;
 
-import com.doodlechaos.playersync.PlayerSync;
-import com.doodlechaos.playersync.Sync.PlayerRecorderV2;
+import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.server.command.CommandManager;
@@ -16,15 +15,15 @@ public class RecordCommands {
         dispatcher.register(literal("rec")
                 // No argument version – uses default value 10
                 .executes(ctx -> {
-                    PlayerSync.Recording = !PlayerSync.Recording;
-                    ctx.getSource().sendMessage(Text.literal("Set Recording: " + PlayerSync.Recording));
+                    PlayerTimeline.setRecording(!PlayerTimeline.isRecording());
+                    ctx.getSource().sendMessage(Text.literal("Set Recording: " + PlayerTimeline.isRecording()));
                     return 1;
                 }));
 
         dispatcher.register(literal("clearRec")
                 // No argument version – uses default value 10
                 .executes(ctx -> {
-                    PlayerRecorderV2.clearRecordedKeyframes();
+                    PlayerTimeline.clearRecordedKeyframes();
                     ctx.getSource().sendMessage(Text.literal("Cleared recorded keyframes"));
                     return 1;
                 })
@@ -35,7 +34,7 @@ public class RecordCommands {
                     .executes(ctx -> {
                         String filename = StringArgumentType.getString(ctx, "filename");
 
-                        PlayerRecorderV2.SaveRecToFile(filename);
+                        PlayerTimeline.SaveRecToFile(filename);
                         ctx.getSource().sendMessage(Text.literal("Saved " + filename));
                         return 1;
                     })
@@ -47,7 +46,7 @@ public class RecordCommands {
                         .executes(ctx -> {
                             String filename = StringArgumentType.getString(ctx, "filename");
 
-                            PlayerRecorderV2.LoadRecFromFile(filename);
+                            PlayerTimeline.LoadRecFromFile(filename);
                             ctx.getSource().sendMessage(Text.literal("Loaded " + filename));
                             return 1;
                         })
@@ -56,9 +55,10 @@ public class RecordCommands {
 
         dispatcher.register(literal("playRec")
                 .executes(ctx -> {
-                    if (!PlayerRecorderV2.getRecordedKeyframes().isEmpty()) {
-                        PlayerSync.PlayingBack = !PlayerSync.PlayingBack;
-                        PlayerSync.playbackIndex = 0;
+                    if (!PlayerTimeline.getRecordedKeyframes().isEmpty()) {
+
+                        PlayerTimeline.setPlayingBack(!PlayerTimeline.isPlayingBack(), 0);
+
                         ctx.getSource().sendMessage(Text.literal("Starting playback"));
                     } else {
                         ctx.getSource().sendMessage(Text.literal("No keyframes to play"));

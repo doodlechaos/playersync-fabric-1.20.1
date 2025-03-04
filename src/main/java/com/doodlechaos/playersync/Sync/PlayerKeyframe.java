@@ -6,7 +6,7 @@ import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlayerKeyframeV2 {
+public class PlayerKeyframe {
 
     public final long frame;
     public final Vec3d playerPos;
@@ -23,7 +23,7 @@ public class PlayerKeyframeV2 {
      * @param playerPitch The player's pitch.
      * @param inputEvents The list of recorded input events.
      */
-    public PlayerKeyframeV2(long frame, Vec3d playerPos, float playerYaw, float playerPitch, List<InputEvent> inputEvents) {
+    public PlayerKeyframe(long frame, Vec3d playerPos, float playerYaw, float playerPitch, List<InputEvent> inputEvents) {
         this.frame = frame;
         this.playerPos = playerPos;
         this.playerYaw = playerYaw;
@@ -36,7 +36,7 @@ public class PlayerKeyframeV2 {
      * Expected format:
      * frame=123|playerPos=[1.234,2.345,3.456]|playerYaw=90.0|playerPitch=45.0|inputEvents=[KeyboardEvent;key=65;scancode=30;action=1;modifiers=0,MouseButtonEvent;button=0;action=1;mods=0]
      */
-    public PlayerKeyframeV2(String line) {
+    public PlayerKeyframe(String line) {
         String[] parts = line.split("\\|");
         long frame = 0;
         Vec3d pos = null;

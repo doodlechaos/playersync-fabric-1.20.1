@@ -1,6 +1,6 @@
 package com.doodlechaos.playersync.command;
 
-import com.doodlechaos.playersync.PlayerSync;
+import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import com.doodlechaos.playersync.VideoRenderer;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.server.command.ServerCommandSource;
@@ -15,8 +15,7 @@ public class RenderCommands {
                 // No argument version – uses default value 10
                 .executes(ctx -> {
                     VideoRenderer.StartRendering();
-                    PlayerSync.PlayingBack = !PlayerSync.PlayingBack;
-                    PlayerSync.playbackIndex = 0;
+                    PlayerTimeline.setPlayingBack(true, 0);
 
                     ctx.getSource().sendMessage(Text.literal("Started rendering!"));
                     return 1;

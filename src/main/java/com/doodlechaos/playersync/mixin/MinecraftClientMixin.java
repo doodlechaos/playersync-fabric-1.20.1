@@ -1,16 +1,14 @@
 package com.doodlechaos.playersync.mixin;
 
 import com.doodlechaos.playersync.PlayerSync;
-import com.doodlechaos.playersync.Sync.AudioSyncPlayer;
-import com.doodlechaos.playersync.Sync.PlayerRecorderV2;
+import com.doodlechaos.playersync.Sync.AudioSync;
+import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import com.doodlechaos.playersync.VideoRenderer;
 import net.minecraft.client.MinecraftClient;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
 
 @Mixin(MinecraftClient.class)
@@ -25,9 +23,12 @@ public class MinecraftClientMixin {
             return;
         }
 
-        if(PlayerSync.PlayingBack){
-            PlayerSync.SimulateInputsFromKeyframe();
-            AudioSyncPlayer.syncAudio();
+        if(PlayerTimeline.isPlayingBack() || PlayerTimeline.isRecording()){
+            AudioSync.syncAudio();
+        }
+
+        if(PlayerTimeline.isPlayingBack()){
+            PlayerTimeline.SimulateInputsFromKeyframe();
         }
     }
 
@@ -35,12 +36,12 @@ public class MinecraftClientMixin {
     @Inject(method = "render", at = @At("TAIL"))
     private void onClientRenderFinish(CallbackInfo ci) {
 
-        if(PlayerSync.Recording){
-            PlayerRecorderV2.RecordKeyframe();
+        if(PlayerTimeline.isRecording()){
+            PlayerTimeline.RecordKeyframe();
         }
-        if(PlayerSync.PlayingBack){
-            PlayerSync.setPlayerFromKeyframe();
-            PlayerSync.playbackIndex++;
+        if(PlayerTimeline.isPlayingBack()){
+            PlayerTimeline.setPlayerFromKeyframe();
+            PlayerTimeline.playheadIndex++;
         }
         if(VideoRenderer.isRendering()){
             VideoRenderer.CaptureFrame();
@@ -51,7 +52,7 @@ public class MinecraftClientMixin {
     //Tick is called from the render loop when necessary
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onClientTick(CallbackInfo ci) {
-        if (PlayerSync.Recording || PlayerSync.PlayingBack) {
+        if (PlayerTimeline.isRecording() || PlayerTimeline.isPlayingBack()) {
             PlayerSync.TickServerFlag = true;
         }
     }
