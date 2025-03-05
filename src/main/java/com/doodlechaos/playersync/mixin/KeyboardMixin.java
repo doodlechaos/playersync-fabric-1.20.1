@@ -1,5 +1,6 @@
 package com.doodlechaos.playersync.mixin;
 
+import com.doodlechaos.playersync.Sync.InputsManager;
 import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import com.doodlechaos.playersync.Sync.InputEventContainers.KeyboardEvent;
 import com.doodlechaos.playersync.mixin.accessor.KeyboardAccessor;
@@ -38,7 +39,7 @@ public class KeyboardMixin {
             // Record the raw GLFW key event.
             if (PlayerTimeline.isRecording()) {
                 KeyboardEvent event = new KeyboardEvent(key, scancode, action, modifiers);
-                PlayerTimeline.recordKeyboardEvent(event);
+                InputsManager.recordKeyboardEvent(event);
             }
             // Delegate to Minecraft’s processing via onKey.
             client.execute(() -> self.onKey(windowx, key, scancode, action, modifiers));

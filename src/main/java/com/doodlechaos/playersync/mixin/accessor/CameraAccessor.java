@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface CameraAccessor {
 
     @Accessor("pos")
-    void mySetRawPos(Vec3d pos);
+    void setRawCamPos(Vec3d pos);
 
     @Accessor("blockPos")
     BlockPos.Mutable myGetBlockPos();

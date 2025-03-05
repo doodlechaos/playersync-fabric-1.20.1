@@ -16,7 +16,7 @@ public abstract class MinecraftServerMixin {
     private void onTick(CallbackInfo ci){
 
         //Never allow a server tick unless right after a client tick
-        if ((/*PlayerTimeline.isRecording() || */PlayerTimeline.isPlayingBack()) && !PlayerSync.TickServerFlag) {
+        if ((/*PlayerTimeline.isRecording() || */PlayerTimeline.isInPlaybackMode()) && !PlayerSync.TickServerFlag) {
             ci.cancel();
             return;
         }

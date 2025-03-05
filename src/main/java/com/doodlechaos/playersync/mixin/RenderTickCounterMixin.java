@@ -14,35 +14,22 @@ public class RenderTickCounterMixin {
 
     @Shadow public float tickDelta;
     @Shadow public float lastFrameDuration;
-    @Shadow private long prevTimeMillis;
     @Shadow @Final private float tickTime;
 
     @Inject(method = "beginRenderTick", at = @At("HEAD"), cancellable = true)
     private void overrideRenderTick(long timeMillis, CallbackInfoReturnable<Integer> cir) {
-        if (PlayerTimeline.isRecording() || PlayerTimeline.isPlayingBack()) {
+        if (PlayerTimeline.isRecording() || (PlayerTimeline.isInPlaybackMode() && !PlayerTimeline.playbackPaused)) {
             // Calculate a constant frame duration of exactly 1/60th second in milliseconds divided by tickTime.
             float constantFrameDuration = (float) (1000.0 / 60.0) / tickTime;
 
             // Set the last frame duration to our constant value.
             this.lastFrameDuration = constantFrameDuration;
 
-            //if(PlayerTimeline.playheadIndex % 20 == 0) //Reset the tick delta so it is deterministic
-            //    this.tickDelta = 0;
-
-            this.tickDelta = (PlayerTimeline.playheadIndex % 3) / 3.0f;;
+            this.tickDelta = (PlayerTimeline.playheadFrame % 3) / 3.0f;;
 
             int ticksToAdvance = 0;
-            if(tickDelta == 0 || tickDelta == 1)
-            {
+            if(tickDelta == 0 || tickDelta == 1) //Only tick when we're recording or playing back
                 ticksToAdvance = 1;
-            }
-            // Update tickDelta accordingly.
-            //this.tickDelta += constantFrameDuration;
-            //int ticksToAdvance = (int)this.tickDelta;
-            //this.tickDelta -= ticksToAdvance;
-
-            // Update the previous time to the current time so that the normal delta calculation is skipped.
-            this.prevTimeMillis = timeMillis;
 
             // Return our computed tick advance, cancelling the rest of the method.
             cir.setReturnValue(ticksToAdvance);

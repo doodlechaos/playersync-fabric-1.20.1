@@ -3,6 +3,7 @@ package com.doodlechaos.playersync.mixin;
 import com.doodlechaos.playersync.Sync.InputEventContainers.MouseButtonEvent;
 import com.doodlechaos.playersync.Sync.InputEventContainers.MousePosEvent;
 import com.doodlechaos.playersync.Sync.InputEventContainers.MouseScrollEvent;
+import com.doodlechaos.playersync.Sync.InputsManager;
 import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import net.minecraft.client.Mouse;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,7 +20,7 @@ public class MouseMixin {
             return;
 
         // Record the button event before the normal processing.
-        PlayerTimeline.recordMouseButtonEvent(new MouseButtonEvent(button, action, mods));
+        InputsManager.recordMouseButtonEvent(new MouseButtonEvent(button, action, mods));
     }
 
     @Inject(method = "onMouseScroll", at = @At("HEAD"))
@@ -28,7 +29,7 @@ public class MouseMixin {
             return;
 
         // Record the scroll event.
-        PlayerTimeline.recordMouseScrollEvent(new MouseScrollEvent(horizontal, vertical));
+        InputsManager.recordMouseScrollEvent(new MouseScrollEvent(horizontal, vertical));
     }
 
     @Inject(method = "onCursorPos", at = @At("HEAD"))
@@ -37,7 +38,7 @@ public class MouseMixin {
             return;
 
         // Record the cursor position event.
-        PlayerTimeline.recordMousePosEvent(new MousePosEvent(x, y));
+        InputsManager.recordMousePosEvent(new MousePosEvent(x, y));
     }
 
 }

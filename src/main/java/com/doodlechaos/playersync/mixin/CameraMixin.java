@@ -12,7 +12,6 @@ import net.minecraft.client.render.Camera;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Camera.class)
@@ -28,7 +27,7 @@ public class CameraMixin {
     //Block setting the position if we're playing back
     @Inject(method = "setPos(Lnet/minecraft/util/math/Vec3d;)V", at = @At("HEAD"), cancellable = true)
     private void setPos(Vec3d pos, CallbackInfo ci) {
-        if(PlayerTimeline.isPlayingBack()){
+        if(PlayerTimeline.isInPlaybackMode()){
             ci.cancel();
             return;
         }
@@ -37,7 +36,7 @@ public class CameraMixin {
 
     @Inject(method = "setRotation", at = @At("HEAD"), cancellable = true)
     private void setRotation(float yaw, float pitch, CallbackInfo ci){
-        if(PlayerTimeline.isPlayingBack()){
+        if(PlayerTimeline.isInPlaybackMode()){
             ci.cancel();
             return;
         }

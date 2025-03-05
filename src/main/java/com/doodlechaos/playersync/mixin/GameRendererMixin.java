@@ -1,6 +1,5 @@
 package com.doodlechaos.playersync.mixin;
 
-import com.doodlechaos.playersync.PlayerSync;
 import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.GameRenderer;
@@ -35,7 +34,7 @@ public class GameRendererMixin {
     )
     private void injectRoll(float tickDelta, long limitTime, MatrixStack matrices, CallbackInfo ci) {
 
-        if(!PlayerTimeline.isPlayingBack())
+        if(!PlayerTimeline.isInPlaybackMode())
             return;
         //Vector3f euler = new Vector3f();
         camera.getRotation().getEulerAnglesYXZ(euler);

@@ -8,17 +8,15 @@ import net.minecraft.text.Text;
 
 import static net.minecraft.server.command.CommandManager.literal;
 
-public class RenderCommands {
+public class TimelineCommands {
 
-    public static void registerRenderCommands(CommandDispatcher<ServerCommandSource> dispatcher) {
-        dispatcher.register(literal("render")
+    public static void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher) {
+        dispatcher.register(literal("timeline")
                 // No argument version – uses default value 10
                 .executes(ctx -> {
-                    VideoRenderer.StartRendering();
-                    PlayerTimeline.setPlayingBack(true);
 
-                    ctx.getSource().sendMessage(Text.literal("Started rendering!"));
                     return 1;
-                }));
+        }));
     }
+
 }

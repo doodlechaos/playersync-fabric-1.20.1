@@ -23,7 +23,7 @@ public class AudioCommands {
                             return 1;
                         })
                 )
-                .then(literal("play"))
+/*                .then(literal("play"))
                     .executes(ctx -> {
                         AudioSync.setPlaying(true);
                         ctx.getSource().sendMessage(Text.literal("Playing audio"));
@@ -42,39 +42,9 @@ public class AudioCommands {
                             ctx.getSource().sendMessage(Text.literal("Set audio playhead to " + playheadTime + " seconds"));
                             return 1;
                         })
-                )
+                )*/
         );
 
-/*        dispatcher.register(literal("roll")
-                .then(CommandManager.argument("degrees", FloatArgumentType.floatArg(0))
-                        .executes(ctx -> {
-                            float degrees = FloatArgumentType.getFloat(ctx, "degrees");
 
-                            PlayerSync.roll = degrees;
-
-                            ctx.getSource().sendMessage(Text.literal("Set  roll to " + degrees + " degrees"));
-                            return 1;
-                        })
-                )
-        );*/
-
-/*        dispatcher.register(literal("camPos")
-                .then(CommandManager.argument("x", FloatArgumentType.floatArg(0))
-                        .then(CommandManager.argument("y", FloatArgumentType.floatArg(0))
-                                .then(CommandManager.argument("z", FloatArgumentType.floatArg(0))
-                                    .executes(ctx -> {
-                                        float x = FloatArgumentType.getFloat(ctx, "x");
-                                        float y = FloatArgumentType.getFloat(ctx, "y");
-                                        float z = FloatArgumentType.getFloat(ctx, "z");
-
-                                        PlayerSync.camPos = new Vec3d(x, y, z);
-
-                                        ctx.getSource().sendMessage(Text.literal("Set canPos to " + PlayerSync.camPos));
-                                        return 1;
-                                    })
-                                )
-                        )
-                )
-        );*/
     }
 }

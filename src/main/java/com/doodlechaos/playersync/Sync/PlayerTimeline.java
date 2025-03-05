@@ -1,6 +1,5 @@
 package com.doodlechaos.playersync.Sync;
 
-import com.doodlechaos.playersync.Sync.InputEventContainers.*;
 import com.doodlechaos.playersync.VideoRenderer;
 import com.doodlechaos.playersync.mixin.accessor.CameraAccessor;
 import com.doodlechaos.playersync.utils.PlayerSyncFolderUtils;
@@ -8,11 +7,13 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.lwjgl.glfw.GLFW;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -26,71 +27,123 @@ public class PlayerTimeline {
     private static boolean recording = false;
 
     public static boolean startPlaybackNextTick = false;
-    private static boolean playingBack = false;
+    private static boolean inPlaybackMode = false;
+    public static boolean playbackPaused = false;
 
     public static int GetRecFrame(){
         return getRecordedKeyframes().size();
     };
 
-    public static int playheadIndex = 0;
+    public static int playheadFrame = 0;
 
     public static boolean isRecording(){return recording;}
-    public static boolean isPlayingBack(){return playingBack;}
+    public static boolean isInPlaybackMode(){return inPlaybackMode;}
 
-    public static void setRecording(boolean value)
-    {
-        recording = value;
-        playheadIndex = GetRecFrame();
-        onStateUpdate();
-    }
-
-    public static void setPlayingBack(boolean value, int frame){
-        playingBack = value;
-        playheadIndex = frame;
-        onStateUpdate();
-    }
-
-    private static void onStateUpdate(){
-        AudioSync.setPlaying(playingBack || recording);
-    }
-
-    private static final List<PlayerKeyframe> recordedKeyframes = new ArrayList<>();
-    private static final List<InputEvent> recordedInputsBuffer = new ArrayList<>();
+    private static boolean wasSpaceKeyDown = false;
+    private static boolean wasPKeyDown = false;
+    private static boolean wasPeriodKeyDown = false;
+    private static boolean wasCommaKeyDown = false;
 
     public static void registerDebugText(){
         HudRenderCallback.EVENT.register((matrixStack, tickDelta) -> {
             MinecraftClient client = MinecraftClient.getInstance();
-            String debugText = "";
+            String debugText = "inPlaybackMode:" + inPlaybackMode;
             if(isRecording()){
                 debugText += "recFrame: " + GetRecFrame();
             }
-            if(isPlayingBack()){
-                debugText += " playingBack: " + playheadIndex;
+            if(isInPlaybackMode()){
+                debugText += " playbackPaused:" + playbackPaused + " frame: " + playheadFrame;
             }
             // Draw the text at position (10, 10) with white color (0xFFFFFF)
             matrixStack.drawText(client.textRenderer, debugText, 10, 20, 0xFFFFFF, false);
         });
     }
 
-    // Called from your mixin to record a mouse button event.
-    public static void recordMouseButtonEvent(MouseButtonEvent event) {
-        recordedInputsBuffer.add(event);
+    private static final List<PlayerKeyframe> recordedKeyframes = new ArrayList<>();
+
+    public static void setRecording(boolean value)
+    {
+        recording = value;
+        playheadFrame = GetRecFrame();
+    //    onStateUpdate();
     }
 
-    // Called from your mixin to record a mouse scroll event.
-    public static void recordMouseScrollEvent(MouseScrollEvent event) {
-        recordedInputsBuffer.add(event);
+    public static void setPlayingBack(boolean value){
+        inPlaybackMode = value;
+  //      onStateUpdate();
     }
 
-    // Called from your mixin to record a mouse position event.
-    public static void recordMousePosEvent(MousePosEvent event) {
-        recordedInputsBuffer.add(event);
+//    private static void onStateUpdate(){
+//        AudioSync.setPlaying(inPlaybackMode || recording);
+//    }
+
+
+    public static void checkPlaybackKeyboardControls() {
+
+
+        long window = MinecraftClient.getInstance().getWindow().getHandle();
+
+        // Toggle playback mode (P key)
+        boolean isPKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_P);
+        if (isPKeyDown && !wasPKeyDown) {
+            setPlayingBack(!inPlaybackMode);
+            LOGGER.info("Detected toggle playback mode key press");
+        }
+        wasPKeyDown = isPKeyDown;
+
+        if (!isInPlaybackMode())
+            return;
+
+        if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT))
+            advanceFrames(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) ? 2 : 1);
+
+        if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT))
+            backupFrames(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) ? 2 : 1);
+
+        if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_DOWN))
+            PlayerTimeline.playheadFrame = 0;
+
+        if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_UP)){
+            int recordedFrames = PlayerTimeline.getRecordedKeyframes().size();
+            if(recordedFrames > 0)
+                PlayerTimeline.playheadFrame = recordedFrames - 1;
+        }
+
+        // Toggle playback paused (Space key)
+        boolean isSpaceKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_SPACE);
+        if (isSpaceKeyDown && !wasSpaceKeyDown) {
+            playbackPaused = !playbackPaused;
+            LOGGER.info("Detected toggle playback paused key press");
+        }
+        wasSpaceKeyDown = isSpaceKeyDown;
+
+        // Advance frame (Period key)
+        boolean isPeriodKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_PERIOD);
+        if (isPeriodKeyDown && !wasPeriodKeyDown) {
+            advanceFrames(1);
+            LOGGER.info("Detected advance frame key press");
+        }
+        wasPeriodKeyDown = isPeriodKeyDown;
+
+        // Backup frame (Comma key)
+        boolean isCommaKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_COMMA);
+        if (isCommaKeyDown && !wasCommaKeyDown) {
+            backupFrames(1);
+            LOGGER.info("Detected backup frame key press");
+        }
+        wasCommaKeyDown = isCommaKeyDown;
     }
 
-    // Called from your mixin to record a keyboard event.
-    public static void recordKeyboardEvent(KeyboardEvent event) {
-        LOGGER.info("recorded keyboard event on frame: " + PlayerTimeline.playheadIndex);
-        recordedInputsBuffer.add(event);
+    public static void advanceFrames(int count){
+        playheadFrame += count;
+        if(playheadFrame >= getRecordedKeyframes().size())
+            playheadFrame = getRecordedKeyframes().size();
+    }
+
+    public static void backupFrames(int amount){
+        playheadFrame -= amount;
+        if(playheadFrame <= 0)
+            playheadFrame = 0;
     }
 
     public static List<PlayerKeyframe> getRecordedKeyframes() {
@@ -113,8 +166,8 @@ public class PlayerTimeline {
         }
 
         float tickDelta = client.getTickDelta();
-        if(playheadIndex == 0){
-            LOGGER.error("playheadIndex: " + playheadIndex + " tickDelta: " + tickDelta);
+        if(playheadFrame == 0){
+            LOGGER.error("playheadIndex: " + playheadFrame + " tickDelta: " + tickDelta);
         }
         Vec3d lerpedPlayerPos = player.getLerpedPos(tickDelta);
 
@@ -134,37 +187,31 @@ public class PlayerTimeline {
                 frameNumber,
                 tickDelta,
                 lerpedPlayerPos,
-                player.getYaw(tickDelta),//lerpedYaw,//client.player.getYaw(),
-                player.getPitch(tickDelta),//lerpedPitch,//client.player.getPitch(),
+                player.getYaw(tickDelta),
+                player.getPitch(tickDelta),
                 camPos,
                 camRot,
-                new ArrayList<>(recordedInputsBuffer)
+                new ArrayList<>(InputsManager.getRecordedInputsBuffer())
         );
 
         // Add the new keyframe to our in-memory list.
         recordedKeyframes.add(keyframe);
 
-        playheadIndex = getRecordedKeyframes().size();
+        playheadFrame = getRecordedKeyframes().size();
 
-        clearRecordedInputsBuffer();
+        InputsManager.clearRecordedInputsBuffer();
     }
 
-    public static void clearRecordedInputsBuffer(){
-        // Clear the recorded event lists so they don't accumulate events across frames.
-        recordedInputsBuffer.clear();
-    }
-
-
-    public static PlayerKeyframe GetCurKeyframe(){
+    public static PlayerKeyframe getCurKeyframe(){
         List<PlayerKeyframe> frames = PlayerTimeline.getRecordedKeyframes();
 
-        if(playheadIndex < 0 || playheadIndex >= frames.size())
+        if(playheadFrame < 0 || playheadFrame >= frames.size())
             return null;
 
-        return frames.get(playheadIndex);
+        return frames.get(playheadFrame);
     }
 
-    public static void setPlayerFromKeyframe(){
+    public static void setPlayerFromKeyframe(PlayerKeyframe keyframe){
 
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayerEntity player = client.player;
@@ -173,87 +220,36 @@ public class PlayerTimeline {
         if(player == null)
             return;
 
-        if(playheadIndex >= PlayerTimeline.getRecordedKeyframes().size()){
-            setPlayingBack(false, 0);
-            player.sendMessage(Text.literal("Playback complete"), false);
+        if(playheadFrame >= PlayerTimeline.getRecordedKeyframes().size()){
+            //setPlayingBack(false, 0);
+            playbackPaused = true;
 
             if(VideoRenderer.isRendering()){
                 VideoRenderer.FinishRendering();
+                player.sendMessage(Text.literal("Rendering complete"), false);
             }
 
             return;
         }
 
-        PlayerKeyframe keyframe = GetCurKeyframe();
-
         if(keyframe == null)
             return;
 
-        //if(playheadIndex == 0){
-            player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
-            player.setYaw(keyframe.playerYaw);
-            player.setPitch(keyframe.playerPitch);
+        player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
+        player.setYaw(keyframe.playerYaw);
+        player.setPitch(keyframe.playerPitch);
 
-            Vector3f euler = new Vector3f();
-            keyframe.camRot.getEulerAnglesYXZ(euler);
+        Vector3f euler = new Vector3f();
+        keyframe.camRot.getEulerAnglesYXZ(euler);
 
-            manualSetCamera(cam, keyframe);
-
-            //LOGGER.info("set cam rot to " + PlayerSync.roll);
-        //}
-/*
-       Vec3d lerpedPos = player.getLerpedPos(tickDelta);
-        boolean tickDeltaMismatch = tickDelta != keyframe.tickDelta;
-        boolean positionMismatch = !lerpedPos.equals(keyframe.playerPos);
-        boolean yawMismatch = player.getYaw(tickDelta) != keyframe.playerYaw;
-        boolean pitchMismatch = player.getPitch(tickDelta) != keyframe.playerPitch;
-
-        if (tickDeltaMismatch || positionMismatch || yawMismatch || pitchMismatch) {
-            StringBuilder diffLog = new StringBuilder("DETECTED NON-DETERMINISM. PlayheadIndex: " + playheadIndex + ". ");
-
-            if (tickDeltaMismatch) {
-                diffLog.append(keyframe.tickDelta).append(" != ").append(tickDelta).append(". ");
-            }
-
-            double deltaX = 0, deltaY = 0, deltaZ = 0;
-            if (positionMismatch) {
-                deltaX = Math.abs(lerpedPos.x - keyframe.playerPos.x);
-                deltaY = Math.abs(lerpedPos.y - keyframe.playerPos.y);
-                deltaZ = Math.abs(lerpedPos.z - keyframe.playerPos.z);
-                diffLog.append("Pos delta -> X: ").append(deltaX)
-                        .append(", Y: ").append(deltaY)
-                        .append(", Z: ").append(deltaZ).append(". ");
-            }
-
-            if (yawMismatch) {
-                double yawDelta = Math.abs(player.getYaw(tickDelta) - keyframe.playerYaw);
-                diffLog.append("Yaw delta: ").append(yawDelta).append(". ");
-            }
-
-            if (pitchMismatch) {
-                double pitchDelta = Math.abs(player.getPitch(tickDelta) - keyframe.playerPitch);
-                diffLog.append("Pitch delta: ").append(pitchDelta).append(". ");
-            }
-
-            LOGGER.info(diffLog.toString());
-
-            // If the position difference exceeds 0.1 on any axis, force an update.
-            if (deltaX > 0.1 || deltaY > 0.1 || deltaZ > 0.1) {
-                LOGGER.error("Player position off by more than 0.1 on at least one axis. Forcing updatePosition to keyframe position: " + keyframe.playerPos);
-                player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
-            }
-        }*/
-
+        manualSetCamera(cam, keyframe);
     }
 
     public static void manualSetCamera(Camera cam, PlayerKeyframe keyframe) {
         CameraAccessor accessor = (CameraAccessor) cam;
 
-        // -- Set the camera position --
-        accessor.mySetRawPos(keyframe.camPos);
+        accessor.setRawCamPos(keyframe.camPos);
 
-
-        // Because blockPos is stored as a final Mutable in Camera, just update it directly:
         BlockPos.Mutable mutableBlockPos = accessor.myGetBlockPos();
         mutableBlockPos.set(
                 (int) keyframe.camPos.x,
@@ -273,9 +269,6 @@ public class PlayerTimeline {
         cam.getHorizontalPlane().set(horizontal);
         cam.getVerticalPlane().set(vertical);
         cam.getDiagonalPlane().set(diagonal);
-        //accessor.setHorizontalPlane(horizontal);
-        //accessor.setVerticalPlane(vertical);
-        //accessor.setDiagonalPlane(diagonal);
 
         // -- Convert the quaternion to Euler angles (Y-X-Z order) --
         Vector3f euler = new Vector3f();
@@ -287,22 +280,6 @@ public class PlayerTimeline {
         accessor.setYaw(-yawDegrees);
         accessor.setPitch(pitchDegrees);
     }
-
-
-    public static void SimulateInputsFromKeyframe(){
-        PlayerKeyframe keyframe = GetCurKeyframe();
-
-        if(keyframe == null)
-            return;
-
-        MinecraftClient client = MinecraftClient.getInstance();
-        long window = client.getWindow().getHandle();
-
-        for (InputEvent ie : keyframe.recordedInputEvents) {
-            ie.simulate(window, client);
-        }
-    }
-
 
     public static void SaveRecToFile(String recName){
         File recFile = new File(PlayerSyncFolderUtils.getPlayerSyncFolder(), recName);
