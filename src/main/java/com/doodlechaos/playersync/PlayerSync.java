@@ -13,6 +13,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.server.MinecraftServer;
 
+import net.minecraft.server.integrated.IntegratedServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -85,6 +87,19 @@ public class PlayerSync implements ModInitializer {
 		PlayerSync.TickServerFlag = false;
 	}
 
+	public static ServerPlayerEntity GetServerPlayer(){
+		IntegratedServer minecraftServer = MinecraftClient.getInstance().getServer();
+		if (minecraftServer == null) {
+			LOGGER.error("Minecraft server is not available.");
+			return null;
+		}
 
+		var playerList = minecraftServer.getPlayerManager().getPlayerList();
+
+		if(playerList.isEmpty())
+			return null;
+
+		return playerList.get(0);
+	}
 
 }

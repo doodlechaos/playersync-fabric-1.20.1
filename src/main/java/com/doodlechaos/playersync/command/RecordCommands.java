@@ -21,7 +21,7 @@ public class RecordCommands {
                         ctx.getSource().sendMessage(Text.literal("Stopped Recording: " + PlayerTimeline.isRecording()));
                     }
                     else{
-                        PlayerTimeline.startRecNextTick = true;
+                        PlayerTimeline.setRecording(true);
                         ctx.getSource().sendMessage(Text.literal("Starting Recording: " + PlayerTimeline.isRecording()));
                     }
 
@@ -59,20 +59,6 @@ public class RecordCommands {
                             return 1;
                         })
                 )
-        );
-
-        dispatcher.register(literal("playRec")
-                .executes(ctx -> {
-                    if (!PlayerTimeline.getRecordedKeyframes().isEmpty()) {
-
-                        PlayerTimeline.startPlaybackNextTick = true;
-
-                        ctx.getSource().sendMessage(Text.literal("Starting playback"));
-                    } else {
-                        ctx.getSource().sendMessage(Text.literal("No keyframes to play"));
-                    }
-                    return 1;
-                })
         );
 
     }

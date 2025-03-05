@@ -1,14 +1,9 @@
 package com.doodlechaos.playersync.Sync;
-
 import com.doodlechaos.playersync.Sync.InputEventContainers.InputEvent;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
-import org.slf4j.spi.LocationAwareLogger;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
 public class PlayerKeyframe {
 
@@ -23,6 +18,8 @@ public class PlayerKeyframe {
 
     public final List<InputEvent> recordedInputEvents;
 
+    public final List<String> cmds;
+
     /**
      * Constructs a PlayerKeyframe with both player and input data.
      *
@@ -34,9 +31,10 @@ public class PlayerKeyframe {
      * @param camPos      The camera's position.
      * @param camRot      The camera's rotation.
      * @param inputEvents The list of recorded input events.
+     * @param cmds        The list of commands.
      */
     public PlayerKeyframe(long frame, float tickDelta, Vec3d playerPos, float playerYaw, float playerPitch,
-                          Vec3d camPos, Quaternionf camRot, List<InputEvent> inputEvents) {
+                          Vec3d camPos, Quaternionf camRot, List<InputEvent> inputEvents, List<String> cmds) {
         this.frame = frame;
         this.tickDelta = tickDelta;
         this.playerPos = playerPos;
@@ -47,12 +45,13 @@ public class PlayerKeyframe {
         this.camRot = camRot;
 
         this.recordedInputEvents = inputEvents;
+        this.cmds = cmds;
     }
 
     /**
      * Constructs a PlayerKeyframe from a single-line string.
      * Expected format:
-     * frame=123|tickDelta=0.0|playerPos=[1.234,2.345,3.456]|playerYaw=90.0|playerPitch=45.0|camPos=[0.0,0.0,0.0]|camRot=[0.0,0.0,0.0,1.0]|inputEvents=[KeyboardEvent;key=65;scancode=30;action=1;modifiers=0,MouseButtonEvent;button=0;action=1;mods=0]
+     * frame=123|tickDelta=0.0|playerPos=[1.234,2.345,3.456]|playerYaw=90.0|playerPitch=45.0|camPos=[0.0,0.0,0.0]|camRot=[0.0,0.0,0.0,1.0]|inputEvents=[KeyboardEvent;key=65;scancode=30;action=1;modifiers=0,MouseButtonEvent;button=0;action=1;mods=0]|cmds=[cmd1,cmd2]
      */
     public PlayerKeyframe(String line) {
         String[] parts = line.split("\\|");
@@ -65,6 +64,7 @@ public class PlayerKeyframe {
         Vec3d camPos = new Vec3d(0, 0, 0);
         Quaternionf camRot = new Quaternionf(0, 0, 0, 1);
         List<InputEvent> events = new ArrayList<>();
+        List<String> cmds = new ArrayList<>();
 
         for (String part : parts) {
             if (part.startsWith("frame=")) {
@@ -110,6 +110,16 @@ public class PlayerKeyframe {
                         events.add(InputEvent.fromLine(eventLine));
                     }
                 }
+            } else if (part.startsWith("cmds=")) {
+                int start = part.indexOf('[');
+                int end = part.indexOf(']');
+                String cmdsStr = part.substring(start + 1, end);
+                if (!cmdsStr.trim().isEmpty()) {
+                    String[] cmdArray = cmdsStr.split(",");
+                    for (String cmd : cmdArray) {
+                        cmds.add(cmd.trim());
+                    }
+                }
             }
         }
         this.frame = frame;
@@ -120,12 +130,13 @@ public class PlayerKeyframe {
         this.camPos = camPos;
         this.camRot = camRot;
         this.recordedInputEvents = events;
+        this.cmds = cmds;
     }
 
     /**
      * Serializes the PlayerKeyframe to a single line of text with full precision.
      * Format:
-     * frame=123|tickDelta=0.0|playerPos=[1.234,2.345,3.456]|playerYaw=90.0|playerPitch=45.0|camPos=[0.0,0.0,0.0]|camRot=[0.0,0.0,0.0,1.0]|inputEvents=[KeyboardEvent;key=65;scancode=30;action=1;modifiers=0,MouseButtonEvent;button=0;action=1;mods=0]
+     * frame=123|tickDelta=0.0|playerPos=[1.234,2.345,3.456]|playerYaw=90.0|playerPitch=45.0|camPos=[0.0,0.0,0.0]|camRot=[0.0,0.0,0.0,1.0]|inputEvents=[KeyboardEvent;key=65;scancode=30;action=1;modifiers=0,MouseButtonEvent;button=0;action=1;mods=0]|cmds=[cmd1,cmd2]
      */
     public String ToLine() {
         StringBuilder sb = new StringBuilder();
@@ -140,6 +151,14 @@ public class PlayerKeyframe {
         for (int i = 0; i < recordedInputEvents.size(); i++) {
             sb.append(recordedInputEvents.get(i).toLine());
             if (i < recordedInputEvents.size() - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        sb.append("|cmds=[");
+        for (int i = 0; i < cmds.size(); i++) {
+            sb.append(cmds.get(i));
+            if (i < cmds.size() - 1) {
                 sb.append(",");
             }
         }

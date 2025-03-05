@@ -15,7 +15,6 @@ public class RenderCommands {
                 // No argument version – uses default value 10
                 .executes(ctx -> {
                     VideoRenderer.StartRendering();
-                    PlayerTimeline.setPlayingBack(true);
 
                     ctx.getSource().sendMessage(Text.literal("Started rendering!"));
                     return 1;

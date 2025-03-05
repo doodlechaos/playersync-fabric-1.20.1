@@ -10,6 +10,8 @@ import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
 public class InputsManager {
 
+    public static String mostRecentCommand;
+
     private static final List<InputEvent> recordedInputsBuffer = new ArrayList<>();
 
     // Called from your mixin to record a mouse button event.
@@ -54,5 +56,7 @@ public class InputsManager {
             ie.simulate(window, client);
         }
     }
+
+
 
 }

@@ -1,13 +1,18 @@
 package com.doodlechaos.playersync.Sync;
 
+import com.doodlechaos.playersync.PlayerSync;
 import com.doodlechaos.playersync.VideoRenderer;
 import com.doodlechaos.playersync.mixin.accessor.CameraAccessor;
 import com.doodlechaos.playersync.utils.PlayerSyncFolderUtils;
+import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.integrated.IntegratedServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -23,11 +28,9 @@ import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
 public class PlayerTimeline {
 
-    public static boolean startRecNextTick = false;
     private static boolean recording = false;
 
-    public static boolean startPlaybackNextTick = false;
-    private static boolean inPlaybackMode = false;
+    public static boolean inPlaybackMode = false;
     public static boolean playbackPaused = false;
 
     public static int GetRecFrame(){
@@ -39,6 +42,7 @@ public class PlayerTimeline {
     public static boolean isRecording(){return recording;}
     public static boolean isInPlaybackMode(){return inPlaybackMode;}
 
+    private static boolean wasRKeyDown = false;
     private static boolean wasSpaceKeyDown = false;
     private static boolean wasPKeyDown = false;
     private static boolean wasPeriodKeyDown = false;
@@ -65,34 +69,34 @@ public class PlayerTimeline {
     {
         recording = value;
         playheadFrame = GetRecFrame();
-    //    onStateUpdate();
     }
-
-    public static void setPlayingBack(boolean value){
-        inPlaybackMode = value;
-  //      onStateUpdate();
-    }
-
-//    private static void onStateUpdate(){
-//        AudioSync.setPlaying(inPlaybackMode || recording);
-//    }
-
 
     public static void checkPlaybackKeyboardControls() {
-
 
         long window = MinecraftClient.getInstance().getWindow().getHandle();
 
         // Toggle playback mode (P key)
         boolean isPKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_P);
         if (isPKeyDown && !wasPKeyDown) {
-            setPlayingBack(!inPlaybackMode);
+            inPlaybackMode = !inPlaybackMode;
             LOGGER.info("Detected toggle playback mode key press");
         }
         wasPKeyDown = isPKeyDown;
 
         if (!isInPlaybackMode())
             return;
+
+        // Toggle playback paused (R key)
+        boolean isRKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_R);
+        if (isRKeyDown && !wasRKeyDown) {
+            PlayerKeyframe keyframe = getCurKeyframe();
+
+            if(keyframe != null)
+                addCommandToKeyframe(InputsManager.mostRecentCommand, keyframe);
+
+
+        }
+        wasRKeyDown = isRKeyDown;
 
         if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT))
             advanceFrames(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) ? 2 : 1);
@@ -154,6 +158,14 @@ public class PlayerTimeline {
         recordedKeyframes.clear();
     }
 
+    private static void addCommandToKeyframe(String cmd, PlayerKeyframe keyframe){
+        keyframe.cmds.add(cmd);
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        if(client.player != null)
+            client.player.sendMessage(Text.literal("Added [" + cmd + "] to keyframe " + playheadFrame)); //TODO: This is just sending the command as a message. How can I make it so that it acts as if the player send the message in the text box so it actually executes the command as if it came from them?
+    }
+
     /**
      * Records a new keyframe that captures both player and input data.
      */
@@ -191,7 +203,8 @@ public class PlayerTimeline {
                 player.getPitch(tickDelta),
                 camPos,
                 camRot,
-                new ArrayList<>(InputsManager.getRecordedInputsBuffer())
+                new ArrayList<>(InputsManager.getRecordedInputsBuffer()),
+                new ArrayList<>()
         );
 
         // Add the new keyframe to our in-memory list.
@@ -243,6 +256,14 @@ public class PlayerTimeline {
         keyframe.camRot.getEulerAnglesYXZ(euler);
 
         manualSetCamera(cam, keyframe);
+
+        //Execute the commands stored in the keyframe
+        for(String cmd : keyframe.cmds){
+            if (cmd == null || cmd.isEmpty()) {
+                continue; // Skip null or empty commands
+            }
+            ExecuteCommandAsPlayer(cmd);
+        }
     }
 
     public static void manualSetCamera(Camera cam, PlayerKeyframe keyframe) {
@@ -314,5 +335,38 @@ public class PlayerTimeline {
             LOGGER.error("Error loading recording from file: " + recFile.getAbsolutePath(), e);
         }
     }
+    public static void ExecuteCommandAsPlayer(String command) {
+        IntegratedServer minecraftServer = MinecraftClient.getInstance().getServer();
+        if (minecraftServer == null) {
+            LOGGER.error("Minecraft server is not available.");
+            return;
+        }
+
+        ServerPlayerEntity player = PlayerSync.GetServerPlayer();
+        if (player == null) {
+            LOGGER.error("No players are currently online.");
+            return;
+        }
+
+        // Ensure the command does not start with a slash
+        if (command.startsWith("/")) {
+            command = command.substring(1);
+        }
+
+        // Capture the modified command in a final variable for use in the lambda
+        final String commandToExecute = command;
+
+        minecraftServer.execute(() -> {
+            try {
+                CommandDispatcher<ServerCommandSource> dispatcher = minecraftServer.getCommandManager().getDispatcher();
+                var parsedCommand = dispatcher.parse(commandToExecute, player.getCommandSource());
+                dispatcher.execute(parsedCommand);
+                LOGGER.info("Command executed successfully");
+            } catch (Exception e) {
+                LOGGER.error("Failed to execute command [" + commandToExecute + "]: " + e.toString());
+            }
+        });
+    }
+
 
 }

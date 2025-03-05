@@ -24,6 +24,8 @@ public class MinecraftClientMixin {
 
         My60FPSUpdate();
 
+        //If I use setblock to place a minecraft block between minecraft 20tps ticks, will it wait until the next tick to be placed?
+
         if(PlayerSync.TickServerFlag){
             ci.cancel();
             return;
@@ -87,14 +89,6 @@ public class MinecraftClientMixin {
     //Tick is called from the render loop when necessary
     @Inject(method = "tick", at = @At("TAIL"), cancellable = true)
     private void onEndClientTick(CallbackInfo ci) {
-        if(PlayerTimeline.startRecNextTick){
-            PlayerTimeline.setRecording(true);
-            PlayerTimeline.startRecNextTick = false;
-        }
-        if(PlayerTimeline.startPlaybackNextTick){
-            PlayerTimeline.setPlayingBack(!PlayerTimeline.isInPlaybackMode());
-            PlayerTimeline.startPlaybackNextTick = false;
-        }
 
     }
 
@@ -111,6 +105,5 @@ public class MinecraftClientMixin {
             cir.setReturnValue(tickDelta);
         }
     }
-
 
 }

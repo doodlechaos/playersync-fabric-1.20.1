@@ -1,5 +1,6 @@
 package com.doodlechaos.playersync;
 
+import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import net.minecraft.client.MinecraftClient;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
@@ -70,6 +71,9 @@ public class VideoRenderer {
             return;
         }
         rendering = true;
+        PlayerTimeline.playheadFrame = 0;
+        PlayerTimeline.inPlaybackMode = true;
+
         loadConfig(); // load configuration from file
 
         //long windowHandle = MinecraftClient.getInstance().getWindow().getHandle();
