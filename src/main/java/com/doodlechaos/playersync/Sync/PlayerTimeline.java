@@ -1,6 +1,5 @@
 package com.doodlechaos.playersync.Sync;
 
-import com.doodlechaos.playersync.PlayerSync;
 import com.doodlechaos.playersync.Sync.InputEventContainers.*;
 import com.doodlechaos.playersync.VideoRenderer;
 import com.doodlechaos.playersync.mixin.accessor.CameraAccessor;
@@ -10,6 +9,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -189,8 +189,6 @@ public class PlayerTimeline {
         if(keyframe == null)
             return;
 
-
-
         //if(playheadIndex == 0){
             player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
             player.setYaw(keyframe.playerYaw);
@@ -198,12 +196,10 @@ public class PlayerTimeline {
 
             Vector3f euler = new Vector3f();
             keyframe.camRot.getEulerAnglesYXZ(euler);
-            PlayerSync.roll = (float) Math.toDegrees(euler.z);
-            //CameraAccessor accessor = (CameraAccessor)cam;
-            //accessor.invokeSetPos(keyframe.camPos);
-            // Use the new helper method to update all dependent rotation fields
-            //updateCameraRotationFromQuaternion(cam, keyframe.camRot);
-            LOGGER.info("set cam rot to " + PlayerSync.roll);
+
+            manualSetCamera(cam, keyframe);
+
+            //LOGGER.info("set cam rot to " + PlayerSync.roll);
         //}
 /*
        Vec3d lerpedPos = player.getLerpedPos(tickDelta);
@@ -250,31 +246,48 @@ public class PlayerTimeline {
 
     }
 
-/*    public static void updateCameraRotationFromQuaternion(Camera cam, Quaternionf quaternion) {
+    public static void manualSetCamera(Camera cam, PlayerKeyframe keyframe) {
         CameraAccessor accessor = (CameraAccessor) cam;
 
-        // Clone the quaternion to avoid aliasing issues.
-        Quaternionf newRot = new Quaternionf(quaternion);
-        // Update the camera's rotation.
-        accessor.setRotation(newRot);
+        // -- Set the camera position --
+        accessor.mySetRawPos(keyframe.camPos);
 
-        // Update the basis vectors.
+
+        // Because blockPos is stored as a final Mutable in Camera, just update it directly:
+        BlockPos.Mutable mutableBlockPos = accessor.myGetBlockPos();
+        mutableBlockPos.set(
+                (int) keyframe.camPos.x,
+                (int) keyframe.camPos.y,
+                (int) keyframe.camPos.z
+        );
+
+        // -- Clone the quaternion to avoid aliasing issues --
+        Quaternionf newRot = new Quaternionf(keyframe.camRot);
+        cam.getRotation().set(newRot);
+
+        // -- Update the basis vectors --
         Vector3f horizontal = new Vector3f(0.0f, 0.0f, 1.0f).rotate(newRot);
         Vector3f vertical = new Vector3f(0.0f, 1.0f, 0.0f).rotate(newRot);
         Vector3f diagonal = new Vector3f(1.0f, 0.0f, 0.0f).rotate(newRot);
-        accessor.setHorizontalPlane(horizontal);
-        accessor.setVerticalPlane(vertical);
-        accessor.setDiagonalPlane(diagonal);
 
-        // Convert the quaternion to Euler angles (using YXZ order)
+        cam.getHorizontalPlane().set(horizontal);
+        cam.getVerticalPlane().set(vertical);
+        cam.getDiagonalPlane().set(diagonal);
+        //accessor.setHorizontalPlane(horizontal);
+        //accessor.setVerticalPlane(vertical);
+        //accessor.setDiagonalPlane(diagonal);
+
+        // -- Convert the quaternion to Euler angles (Y-X-Z order) --
         Vector3f euler = new Vector3f();
         newRot.getEulerAnglesYXZ(euler);
 
         float yawDegrees = (float) Math.toDegrees(euler.y);
         float pitchDegrees = (float) Math.toDegrees(euler.x);
+
         accessor.setYaw(-yawDegrees);
         accessor.setPitch(pitchDegrees);
-    }*/
+    }
+
 
     public static void SimulateInputsFromKeyframe(){
         PlayerKeyframe keyframe = GetCurKeyframe();

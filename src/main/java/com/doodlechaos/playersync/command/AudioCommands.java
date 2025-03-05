@@ -45,7 +45,7 @@ public class AudioCommands {
                 )
         );
 
-        dispatcher.register(literal("roll")
+/*        dispatcher.register(literal("roll")
                 .then(CommandManager.argument("degrees", FloatArgumentType.floatArg(0))
                         .executes(ctx -> {
                             float degrees = FloatArgumentType.getFloat(ctx, "degrees");
@@ -56,9 +56,9 @@ public class AudioCommands {
                             return 1;
                         })
                 )
-        );
+        );*/
 
-        dispatcher.register(literal("camPos")
+/*        dispatcher.register(literal("camPos")
                 .then(CommandManager.argument("x", FloatArgumentType.floatArg(0))
                         .then(CommandManager.argument("y", FloatArgumentType.floatArg(0))
                                 .then(CommandManager.argument("z", FloatArgumentType.floatArg(0))
@@ -75,6 +75,6 @@ public class AudioCommands {
                                 )
                         )
                 )
-        );
+        );*/
     }
 }

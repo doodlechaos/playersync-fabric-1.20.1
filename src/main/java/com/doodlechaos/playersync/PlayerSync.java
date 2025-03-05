@@ -27,7 +27,7 @@ public class PlayerSync implements ModInitializer {
 
 	public static Quaternionf camRot = new Quaternionf();
 
-	public static float roll;
+	//public static float roll;
 	public static Vec3d camPos = new Vec3d(0, 80, 0);
 
 	@Override
@@ -48,7 +48,7 @@ public class PlayerSync implements ModInitializer {
 			float xDeg = (float)Math.toDegrees(euler.x);
 			float yDeg = (float)Math.toDegrees(euler.y);
 			float zDeg = (float)Math.toDegrees(euler.z);
-			String camRotDegreesText = String.format("roll: " + roll + " camRot: x=%.2f°, y=%.2f°, z=%.2f°", xDeg, yDeg, zDeg);
+			String camRotDegreesText = String.format("camRot: x=%.2f°, y=%.2f°, z=%.2f°", xDeg, yDeg, zDeg);
 			matrixStack.drawText(client.textRenderer, camRotDegreesText, 10, 30, 0xFFFFFF, false);
 
 		});
