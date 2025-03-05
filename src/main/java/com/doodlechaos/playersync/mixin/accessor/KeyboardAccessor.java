@@ -1,4 +1,4 @@
-package com.doodlechaos.playersync.mixin;
+package com.doodlechaos.playersync.mixin.accessor;
 
 import net.minecraft.client.Keyboard;
 import org.spongepowered.asm.mixin.Mixin;

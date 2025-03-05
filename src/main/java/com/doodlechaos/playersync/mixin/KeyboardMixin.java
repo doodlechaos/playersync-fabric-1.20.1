@@ -2,10 +2,10 @@ package com.doodlechaos.playersync.mixin;
 
 import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import com.doodlechaos.playersync.Sync.InputEventContainers.KeyboardEvent;
+import com.doodlechaos.playersync.mixin.accessor.KeyboardAccessor;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
-import org.lwjgl.glfw.GLFWCharCallbackI;
 import org.lwjgl.glfw.GLFWCharModsCallbackI;
 import org.lwjgl.glfw.GLFWKeyCallbackI;
 import org.spongepowered.asm.mixin.Mixin;

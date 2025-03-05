@@ -30,6 +30,8 @@ public class MinecraftClientMixin {
 
         if(PlayerTimeline.isPlayingBack()){
             PlayerTimeline.SimulateInputsFromKeyframe();
+            PlayerTimeline.setPlayerFromKeyframe();
+            PlayerTimeline.playheadIndex++;
         }
     }
 
@@ -41,8 +43,8 @@ public class MinecraftClientMixin {
             PlayerTimeline.CreateKeyframe();
         }
         if(PlayerTimeline.isPlayingBack()){
-            PlayerTimeline.setPlayerFromKeyframe();
-            PlayerTimeline.playheadIndex++;
+            //PlayerTimeline.setPlayerFromKeyframe();
+            //PlayerTimeline.playheadIndex++;
         }
         if(VideoRenderer.isRendering()){
             VideoRenderer.CaptureFrame();

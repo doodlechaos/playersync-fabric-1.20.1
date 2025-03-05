@@ -1,11 +1,14 @@
 package com.doodlechaos.playersync.command;
 
+import com.doodlechaos.playersync.PlayerSync;
 import com.doodlechaos.playersync.Sync.AudioSync;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec3d;
+
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class AudioCommands {
@@ -42,5 +45,36 @@ public class AudioCommands {
                 )
         );
 
+        dispatcher.register(literal("roll")
+                .then(CommandManager.argument("degrees", FloatArgumentType.floatArg(0))
+                        .executes(ctx -> {
+                            float degrees = FloatArgumentType.getFloat(ctx, "degrees");
+
+                            PlayerSync.roll = degrees;
+
+                            ctx.getSource().sendMessage(Text.literal("Set  roll to " + degrees + " degrees"));
+                            return 1;
+                        })
+                )
+        );
+
+        dispatcher.register(literal("camPos")
+                .then(CommandManager.argument("x", FloatArgumentType.floatArg(0))
+                        .then(CommandManager.argument("y", FloatArgumentType.floatArg(0))
+                                .then(CommandManager.argument("z", FloatArgumentType.floatArg(0))
+                                    .executes(ctx -> {
+                                        float x = FloatArgumentType.getFloat(ctx, "x");
+                                        float y = FloatArgumentType.getFloat(ctx, "y");
+                                        float z = FloatArgumentType.getFloat(ctx, "z");
+
+                                        PlayerSync.camPos = new Vec3d(x, y, z);
+
+                                        ctx.getSource().sendMessage(Text.literal("Set canPos to " + PlayerSync.camPos));
+                                        return 1;
+                                    })
+                                )
+                        )
+                )
+        );
     }
 }

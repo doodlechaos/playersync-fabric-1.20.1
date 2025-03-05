@@ -13,6 +13,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.server.MinecraftServer;
 
+import net.minecraft.util.math.Vec3d;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +24,11 @@ public class PlayerSync implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	public static boolean TickServerFlag = false;
+
+	public static Quaternionf camRot = new Quaternionf();
+
+	public static float roll;
+	public static Vec3d camPos = new Vec3d(0, 80, 0);
 
 	@Override
 	public void onInitialize() {
@@ -34,6 +42,15 @@ public class PlayerSync implements ModInitializer {
 			String debugText = "PartialTick: " + client.getTickDelta() + " TickServerFlag: " + TickServerFlag;
 			// Draw the text at position (10, 10) with white color (0xFFFFFF)
 			matrixStack.drawText(client.textRenderer, debugText, 10, 10, 0xFFFFFF, false);
+
+			Vector3f euler = new Vector3f();
+			camRot.getEulerAnglesYXZ(euler);
+			float xDeg = (float)Math.toDegrees(euler.x);
+			float yDeg = (float)Math.toDegrees(euler.y);
+			float zDeg = (float)Math.toDegrees(euler.z);
+			String camRotDegreesText = String.format("roll: " + roll + " camRot: x=%.2f°, y=%.2f°, z=%.2f°", xDeg, yDeg, zDeg);
+			matrixStack.drawText(client.textRenderer, camRotDegreesText, 10, 30, 0xFFFFFF, false);
+
 		});
 	}
 

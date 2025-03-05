@@ -1,7 +1,7 @@
 package com.doodlechaos.playersync.Sync.InputEventContainers;
 
 import net.minecraft.client.MinecraftClient;
-import com.doodlechaos.playersync.mixin.MouseAccessor;
+import com.doodlechaos.playersync.mixin.accessor.MouseAccessor;
 
 public class MouseButtonEvent extends InputEvent {
     public final int button;

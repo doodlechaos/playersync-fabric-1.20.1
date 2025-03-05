@@ -1,18 +1,22 @@
 package com.doodlechaos.playersync.Sync;
 
+import com.doodlechaos.playersync.PlayerSync;
 import com.doodlechaos.playersync.Sync.InputEventContainers.*;
 import com.doodlechaos.playersync.VideoRenderer;
+import com.doodlechaos.playersync.mixin.accessor.CameraAccessor;
 import com.doodlechaos.playersync.utils.PlayerSyncFolderUtils;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.Camera;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
@@ -117,6 +121,14 @@ public class PlayerTimeline {
         // Use the number of keyframes as the frame number (or use your own frame counter if available)
         long frameNumber = recordedKeyframes.size();
 
+        Camera cam = client.gameRenderer.getCamera();
+        Vec3d camPos = cam.getPos();
+        Quaternionf camRot = cam.getRotation();
+
+        camRot = new Quaternionf(camRot.x, camRot.y, camRot.z, camRot.w);
+
+        LOGGER.info("cam rot recorded: " + camRot);
+
         // Create a merged keyframe with both keyboard and mouse inputs.
         PlayerKeyframe keyframe = new PlayerKeyframe(
                 frameNumber,
@@ -124,6 +136,8 @@ public class PlayerTimeline {
                 lerpedPlayerPos,
                 player.getYaw(tickDelta),//lerpedYaw,//client.player.getYaw(),
                 player.getPitch(tickDelta),//lerpedPitch,//client.player.getPitch(),
+                camPos,
+                camRot,
                 new ArrayList<>(recordedInputsBuffer)
         );
 
@@ -154,9 +168,7 @@ public class PlayerTimeline {
 
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayerEntity player = client.player;
-
-        float tickDelta = client.getTickDelta();
-
+        Camera cam = client.gameRenderer.getCamera();
 
         if(player == null)
             return;
@@ -177,10 +189,21 @@ public class PlayerTimeline {
         if(keyframe == null)
             return;
 
+
+
         //if(playheadIndex == 0){
             player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
             player.setYaw(keyframe.playerYaw);
             player.setPitch(keyframe.playerPitch);
+
+            Vector3f euler = new Vector3f();
+            keyframe.camRot.getEulerAnglesYXZ(euler);
+            PlayerSync.roll = (float) Math.toDegrees(euler.z);
+            //CameraAccessor accessor = (CameraAccessor)cam;
+            //accessor.invokeSetPos(keyframe.camPos);
+            // Use the new helper method to update all dependent rotation fields
+            //updateCameraRotationFromQuaternion(cam, keyframe.camRot);
+            LOGGER.info("set cam rot to " + PlayerSync.roll);
         //}
 /*
        Vec3d lerpedPos = player.getLerpedPos(tickDelta);
@@ -226,6 +249,32 @@ public class PlayerTimeline {
         }*/
 
     }
+
+/*    public static void updateCameraRotationFromQuaternion(Camera cam, Quaternionf quaternion) {
+        CameraAccessor accessor = (CameraAccessor) cam;
+
+        // Clone the quaternion to avoid aliasing issues.
+        Quaternionf newRot = new Quaternionf(quaternion);
+        // Update the camera's rotation.
+        accessor.setRotation(newRot);
+
+        // Update the basis vectors.
+        Vector3f horizontal = new Vector3f(0.0f, 0.0f, 1.0f).rotate(newRot);
+        Vector3f vertical = new Vector3f(0.0f, 1.0f, 0.0f).rotate(newRot);
+        Vector3f diagonal = new Vector3f(1.0f, 0.0f, 0.0f).rotate(newRot);
+        accessor.setHorizontalPlane(horizontal);
+        accessor.setVerticalPlane(vertical);
+        accessor.setDiagonalPlane(diagonal);
+
+        // Convert the quaternion to Euler angles (using YXZ order)
+        Vector3f euler = new Vector3f();
+        newRot.getEulerAnglesYXZ(euler);
+
+        float yawDegrees = (float) Math.toDegrees(euler.y);
+        float pitchDegrees = (float) Math.toDegrees(euler.x);
+        accessor.setYaw(-yawDegrees);
+        accessor.setPitch(pitchDegrees);
+    }*/
 
     public static void SimulateInputsFromKeyframe(){
         PlayerKeyframe keyframe = GetCurKeyframe();

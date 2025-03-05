@@ -13,9 +13,11 @@
     "defaultRequire": 1
   },
   "client": [
-    "KeyboardAccessor",
+    "CameraMixin",
     "KeyboardMixin",
-    "MouseAccessor",
-    "MouseMixin"
+    "MouseMixin",
+    "accessor.CameraAccessor",
+    "accessor.KeyboardAccessor",
+    "accessor.MouseAccessor"
   ]
 }

@@ -1,6 +1,6 @@
 package com.doodlechaos.playersync.Sync.InputEventContainers;
 
-import com.doodlechaos.playersync.mixin.MouseAccessor;
+import com.doodlechaos.playersync.mixin.accessor.MouseAccessor;
 import net.minecraft.client.MinecraftClient;
 
 public class MouseScrollEvent extends InputEvent {
