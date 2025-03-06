@@ -29,8 +29,6 @@ public class PlayerSync implements ModInitializer {
 
 	public static Quaternionf camRot = new Quaternionf();
 
-	//public static float roll;
-	public static Vec3d camPos = new Vec3d(0, 80, 0);
 
 	@Override
 	public void onInitialize() {

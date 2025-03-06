@@ -34,7 +34,7 @@ public class GameRendererMixin {
     )
     private void injectRoll(float tickDelta, long limitTime, MatrixStack matrices, CallbackInfo ci) {
 
-        if(!PlayerTimeline.isInPlaybackMode())
+        if(!PlayerTimeline.isPlaybackEnabled())
             return;
         //Vector3f euler = new Vector3f();
         camera.getRotation().getEulerAnglesYXZ(euler);

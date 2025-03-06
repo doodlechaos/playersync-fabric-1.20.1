@@ -45,6 +45,6 @@ public class KeyboardEvent extends InputEvent {
     @Override
     public void simulate(long window, net.minecraft.client.MinecraftClient client) {
         client.keyboard.onKey(window, key, scancode, action, modifiers);
-        PlayerSync.LOGGER.info("Simulated keyboard event on frame: " + PlayerTimeline.playheadFrame + " key " + key + ", action " + action);
+        PlayerSync.LOGGER.info("Simulated keyboard event on frame: " + PlayerTimeline.getFrame() + " key " + key + ", action " + action);
     }
 }

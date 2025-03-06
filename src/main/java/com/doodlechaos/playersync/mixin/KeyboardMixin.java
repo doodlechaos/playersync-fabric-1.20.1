@@ -19,15 +19,15 @@ import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 @Mixin(Keyboard.class)
 public class KeyboardMixin {
 
-/*    @Inject(method = "onKey", at = @At("HEAD"))
-    public void recordKeyboardInput(long window, int key, int scancode, int action, int modifiers, CallbackInfo ci) {
-
-        if(!PlayerTimeline.isRecording())
-            return;
-
-        KeyboardEvent event = new KeyboardEvent(key, scancode, action, modifiers);
-        PlayerTimeline.recordKeyboardEvent(event);
-    }*/
+//    @Inject(method = "onKey", at = @At("HEAD"))
+//    public void recordKeyboardInput(long window, int key, int scancode, int action, int modifiers, CallbackInfo ci) {
+//
+//        if(!PlayerTimeline.isRecording())
+//            return;
+//
+//        KeyboardEvent event = new KeyboardEvent(key, scancode, action, modifiers);
+//        InputsManager.recordKeyboardEvent(event);
+//    }
 
     @Inject(method = "setup", at = @At("HEAD"), cancellable = true)
     private void onSetup(long window, CallbackInfo ci) {

@@ -71,8 +71,8 @@ public class VideoRenderer {
             return;
         }
         rendering = true;
-        PlayerTimeline.playheadFrame = 0;
-        PlayerTimeline.inPlaybackMode = true;
+        PlayerTimeline.setFrame(0);
+        PlayerTimeline.setPlaybackEnabled(true);
 
         loadConfig(); // load configuration from file
 

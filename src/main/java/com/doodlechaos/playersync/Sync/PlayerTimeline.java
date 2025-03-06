@@ -1,24 +1,17 @@
 package com.doodlechaos.playersync.Sync;
 
-import com.doodlechaos.playersync.PlayerSync;
 import com.doodlechaos.playersync.VideoRenderer;
 import com.doodlechaos.playersync.mixin.accessor.CameraAccessor;
 import com.doodlechaos.playersync.utils.PlayerSyncFolderUtils;
-import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.integrated.IntegratedServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.lwjgl.glfw.GLFW;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -30,125 +23,83 @@ public class PlayerTimeline {
 
     private static boolean recording = false;
 
-    public static boolean inPlaybackMode = false;
-    public static boolean playbackPaused = false;
+    private static boolean playbackEnabled = false;
+    private static boolean playbackPaused = false;
+    private static boolean playerDetatched = false;
 
-    public static int GetRecFrame(){
-        return getRecordedKeyframes().size();
-    };
+    private static int frame = 0;
 
-    public static int playheadFrame = 0;
-
+    //Getters
     public static boolean isRecording(){return recording;}
-    public static boolean isInPlaybackMode(){return inPlaybackMode;}
-
-    private static boolean wasRKeyDown = false;
-    private static boolean wasSpaceKeyDown = false;
-    private static boolean wasPKeyDown = false;
-    private static boolean wasPeriodKeyDown = false;
-    private static boolean wasCommaKeyDown = false;
+    public static boolean isPlaybackEnabled(){return playbackEnabled;}
+    public static boolean isPlaybackPaused(){return playbackPaused; }
+    public static boolean isPlayerDetatched() {return playerDetatched;}
+    public static int GetRecFrame(){ return getRecordedKeyframes().size();};
 
     public static void registerDebugText(){
         HudRenderCallback.EVENT.register((matrixStack, tickDelta) -> {
             MinecraftClient client = MinecraftClient.getInstance();
-            String debugText = "inPlaybackMode:" + inPlaybackMode;
+            String debugText = "inPlaybackMode:" + playbackEnabled;
             if(isRecording()){
                 debugText += "recFrame: " + GetRecFrame();
             }
-            if(isInPlaybackMode()){
-                debugText += " playbackPaused:" + playbackPaused + " frame: " + playheadFrame;
+            if(isPlaybackEnabled()){
+                debugText += " playbackPaused:" + playbackPaused + " frame: " + frame;
             }
             // Draw the text at position (10, 10) with white color (0xFFFFFF)
             matrixStack.drawText(client.textRenderer, debugText, 10, 20, 0xFFFFFF, false);
         });
     }
 
+
     private static final List<PlayerKeyframe> recordedKeyframes = new ArrayList<>();
 
     public static void setRecording(boolean value)
     {
         recording = value;
-        playheadFrame = GetRecFrame();
+        setFrame(GetRecFrame());
     }
 
-    public static void checkPlaybackKeyboardControls() {
-
-        long window = MinecraftClient.getInstance().getWindow().getHandle();
-
-        // Toggle playback mode (P key)
-        boolean isPKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_P);
-        if (isPKeyDown && !wasPKeyDown) {
-            inPlaybackMode = !inPlaybackMode;
-            LOGGER.info("Detected toggle playback mode key press");
-        }
-        wasPKeyDown = isPKeyDown;
-
-        if (!isInPlaybackMode())
+    public static void setPlaybackEnabled(boolean value){
+        if(playbackEnabled == value)
             return;
 
-        // Toggle playback paused (R key)
-        boolean isRKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_R);
-        if (isRKeyDown && !wasRKeyDown) {
-            PlayerKeyframe keyframe = getCurKeyframe();
+        playbackEnabled = value;
 
-            if(keyframe != null)
-                addCommandToKeyframe(InputsManager.mostRecentCommand, keyframe);
+        if(!playbackEnabled)
+            InputsManager.releaseAllKeys();
+    }
 
+    public static void setPlaybackPaused(boolean value){
+        playbackPaused = value;
+    }
 
-        }
-        wasRKeyDown = isRKeyDown;
+    public static void setPlayerDetatched(boolean value){
+        if(playerDetatched == value)
+            return;
+        playerDetatched = value;
 
-        if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT))
-            advanceFrames(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) ? 2 : 1);
-
-        if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT))
-            backupFrames(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) ? 2 : 1);
-
-        if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_DOWN))
-            PlayerTimeline.playheadFrame = 0;
-
-        if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_UP)){
-            int recordedFrames = PlayerTimeline.getRecordedKeyframes().size();
-            if(recordedFrames > 0)
-                PlayerTimeline.playheadFrame = recordedFrames - 1;
-        }
-
-        // Toggle playback paused (Space key)
-        boolean isSpaceKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_SPACE);
-        if (isSpaceKeyDown && !wasSpaceKeyDown) {
-            playbackPaused = !playbackPaused;
-            LOGGER.info("Detected toggle playback paused key press");
-        }
-        wasSpaceKeyDown = isSpaceKeyDown;
-
-        // Advance frame (Period key)
-        boolean isPeriodKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_PERIOD);
-        if (isPeriodKeyDown && !wasPeriodKeyDown) {
-            advanceFrames(1);
-            LOGGER.info("Detected advance frame key press");
-        }
-        wasPeriodKeyDown = isPeriodKeyDown;
-
-        // Backup frame (Comma key)
-        boolean isCommaKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_COMMA);
-        if (isCommaKeyDown && !wasCommaKeyDown) {
-            backupFrames(1);
-            LOGGER.info("Detected backup frame key press");
-        }
-        wasCommaKeyDown = isCommaKeyDown;
+        if(playerDetatched)
+            InputsManager.releaseAllKeys();
     }
 
     public static void advanceFrames(int count){
-        playheadFrame += count;
-        if(playheadFrame >= getRecordedKeyframes().size())
-            playheadFrame = getRecordedKeyframes().size();
+        frame += count;
+        if(frame >= getRecordedKeyframes().size())
+            setFrame(getRecordedKeyframes().size());
+        setPlayerDetatched(false);
     }
 
     public static void backupFrames(int amount){
-        playheadFrame -= amount;
-        if(playheadFrame <= 0)
-            playheadFrame = 0;
+        frame -= amount;
+        if(frame <= 0)
+            setFrame(0);
+        setPlayerDetatched(false);
     }
+
+    public static int getFrame(){ return frame; }
+
+    public static void setFrame(int value){ frame = value; }
 
     public static List<PlayerKeyframe> getRecordedKeyframes() {
         return recordedKeyframes;
@@ -158,12 +109,12 @@ public class PlayerTimeline {
         recordedKeyframes.clear();
     }
 
-    private static void addCommandToKeyframe(String cmd, PlayerKeyframe keyframe){
+    public static void addCommandToKeyframe(String cmd, PlayerKeyframe keyframe){
         keyframe.cmds.add(cmd);
 
         MinecraftClient client = MinecraftClient.getInstance();
         if(client.player != null)
-            client.player.sendMessage(Text.literal("Added [" + cmd + "] to keyframe " + playheadFrame)); //TODO: This is just sending the command as a message. How can I make it so that it acts as if the player send the message in the text box so it actually executes the command as if it came from them?
+            client.player.sendMessage(Text.literal("Added [" + cmd + "] to keyframe " + frame)); //TODO: This is just sending the command as a message. How can I make it so that it acts as if the player send the message in the text box so it actually executes the command as if it came from them?
     }
 
     /**
@@ -178,8 +129,8 @@ public class PlayerTimeline {
         }
 
         float tickDelta = client.getTickDelta();
-        if(playheadFrame == 0){
-            LOGGER.error("playheadIndex: " + playheadFrame + " tickDelta: " + tickDelta);
+        if(frame == 0){
+            LOGGER.error("playheadIndex: " + frame + " tickDelta: " + tickDelta);
         }
         Vec3d lerpedPlayerPos = player.getLerpedPos(tickDelta);
 
@@ -210,7 +161,7 @@ public class PlayerTimeline {
         // Add the new keyframe to our in-memory list.
         recordedKeyframes.add(keyframe);
 
-        playheadFrame = getRecordedKeyframes().size();
+        setFrame(getRecordedKeyframes().size());
 
         InputsManager.clearRecordedInputsBuffer();
     }
@@ -218,13 +169,16 @@ public class PlayerTimeline {
     public static PlayerKeyframe getCurKeyframe(){
         List<PlayerKeyframe> frames = PlayerTimeline.getRecordedKeyframes();
 
-        if(playheadFrame < 0 || playheadFrame >= frames.size())
+        if(frame < 0 || frame >= frames.size())
             return null;
 
-        return frames.get(playheadFrame);
+        return frames.get(frame);
     }
 
     public static void setPlayerFromKeyframe(PlayerKeyframe keyframe){
+
+        if(playerDetatched)
+            return;
 
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayerEntity player = client.player;
@@ -233,7 +187,7 @@ public class PlayerTimeline {
         if(player == null)
             return;
 
-        if(playheadFrame >= PlayerTimeline.getRecordedKeyframes().size()){
+        if(frame >= PlayerTimeline.getRecordedKeyframes().size()){
             //setPlayingBack(false, 0);
             playbackPaused = true;
 
@@ -256,14 +210,6 @@ public class PlayerTimeline {
         keyframe.camRot.getEulerAnglesYXZ(euler);
 
         manualSetCamera(cam, keyframe);
-
-        //Execute the commands stored in the keyframe
-        for(String cmd : keyframe.cmds){
-            if (cmd == null || cmd.isEmpty()) {
-                continue; // Skip null or empty commands
-            }
-            ExecuteCommandAsPlayer(cmd);
-        }
     }
 
     public static void manualSetCamera(Camera cam, PlayerKeyframe keyframe) {
@@ -335,38 +281,8 @@ public class PlayerTimeline {
             LOGGER.error("Error loading recording from file: " + recFile.getAbsolutePath(), e);
         }
     }
-    public static void ExecuteCommandAsPlayer(String command) {
-        IntegratedServer minecraftServer = MinecraftClient.getInstance().getServer();
-        if (minecraftServer == null) {
-            LOGGER.error("Minecraft server is not available.");
-            return;
-        }
 
-        ServerPlayerEntity player = PlayerSync.GetServerPlayer();
-        if (player == null) {
-            LOGGER.error("No players are currently online.");
-            return;
-        }
 
-        // Ensure the command does not start with a slash
-        if (command.startsWith("/")) {
-            command = command.substring(1);
-        }
-
-        // Capture the modified command in a final variable for use in the lambda
-        final String commandToExecute = command;
-
-        minecraftServer.execute(() -> {
-            try {
-                CommandDispatcher<ServerCommandSource> dispatcher = minecraftServer.getCommandManager().getDispatcher();
-                var parsedCommand = dispatcher.parse(commandToExecute, player.getCommandSource());
-                dispatcher.execute(parsedCommand);
-                LOGGER.info("Command executed successfully");
-            } catch (Exception e) {
-                LOGGER.error("Failed to execute command [" + commandToExecute + "]: " + e.toString());
-            }
-        });
-    }
 
 
 }

@@ -24,19 +24,20 @@ public class CameraMixin {
         PlayerSync.camRot = rotation;
     }
 
-    //Block setting the position if we're playing back
+    //Block the client from setting the camera pos relative to player if we're playing back and not detatched
     @Inject(method = "setPos(Lnet/minecraft/util/math/Vec3d;)V", at = @At("HEAD"), cancellable = true)
     private void setPos(Vec3d pos, CallbackInfo ci) {
-        if(PlayerTimeline.isInPlaybackMode()){
+        if(PlayerTimeline.isPlaybackEnabled() && !PlayerTimeline.isPlayerDetatched()){
             ci.cancel();
             return;
         }
 
     }
 
+    //Block the client from setting the camera rot relative to player if we're playing back and not detatched
     @Inject(method = "setRotation", at = @At("HEAD"), cancellable = true)
     private void setRotation(float yaw, float pitch, CallbackInfo ci){
-        if(PlayerTimeline.isInPlaybackMode()){
+        if(PlayerTimeline.isPlaybackEnabled() && !PlayerTimeline.isPlayerDetatched()){
             ci.cancel();
             return;
         }

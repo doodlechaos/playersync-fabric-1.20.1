@@ -18,30 +18,44 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin {
 
+    @Unique
+    private static int prevPlayheadFrame = 0;
+
     //When recording or playing back, render is called once every video frame
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onClientRenderStart(CallbackInfo ci) {
 
         My60FPSUpdate();
 
-        //If I use setblock to place a minecraft block between minecraft 20tps ticks, will it wait until the next tick to be placed?
-
-        if(PlayerSync.TickServerFlag){
+        if(PlayerSync.TickServerFlag && !MinecraftClient.getInstance().isPaused()){ //Server doesn't tick when esc pause menu is up. Must continue or game will freeze.
             ci.cancel();
             return;
         }
 
-        if(PlayerTimeline.isInPlaybackMode()){
+        if(PlayerTimeline.isPlaybackEnabled()){
             PlayerKeyframe keyframe = PlayerTimeline.getCurKeyframe();
 
-            if(!PlayerTimeline.playbackPaused)
+            if(prevPlayheadFrame != PlayerTimeline.getFrame())
                 InputsManager.SimulateInputsFromKeyframe(keyframe);
+            prevPlayheadFrame = PlayerTimeline.getFrame();
 
             PlayerTimeline.setPlayerFromKeyframe(keyframe);
 
-            if(!PlayerTimeline.playbackPaused)
-                PlayerTimeline.playheadFrame++;
+            if(!PlayerTimeline.isPlaybackPaused())
+                PlayerTimeline.advanceFrames(1);
         }
+    }
+    @Inject(method = "render", at = @At("TAIL"))
+    private void onClientRenderFinish(CallbackInfo ci) {
+
+        if(PlayerTimeline.isRecording()){
+            PlayerTimeline.CreateKeyframe();
+        }
+
+        if(VideoRenderer.isRendering()){
+            VideoRenderer.CaptureFrame();
+        }
+
     }
 
     @Unique
@@ -57,23 +71,13 @@ public class MinecraftClientMixin {
         }
         lastCheckTime = now;
 
-        PlayerTimeline.checkPlaybackKeyboardControls();
+        InputsManager.checkPlaybackKeyboardControls();
 
-        float playheadTime = PlayerTimeline.playheadFrame / 60.0f;
+        float playheadTime = PlayerTimeline.getFrame() / 60.0f;
         AudioSync.updateAudio(playheadTime);
     }
 
-    @Inject(method = "render", at = @At("TAIL"))
-    private void onClientRenderFinish(CallbackInfo ci) {
 
-        if(PlayerTimeline.isRecording()){
-            PlayerTimeline.CreateKeyframe();
-        }
-
-        if(VideoRenderer.isRendering()){
-            VideoRenderer.CaptureFrame();
-        }
-    }
 
 
     //Tick is called from the render loop when necessary
@@ -81,7 +85,7 @@ public class MinecraftClientMixin {
     private void onClientTick(CallbackInfo ci) {
 
 
-        if (PlayerTimeline.isRecording() || PlayerTimeline.isInPlaybackMode()) {
+        if (PlayerTimeline.isRecording() || PlayerTimeline.isPlaybackEnabled()) {
             PlayerSync.TickServerFlag = true;
         }
     }
@@ -98,8 +102,8 @@ public class MinecraftClientMixin {
      */
     @Inject(method = "getTickDelta", at = @At("HEAD"), cancellable = true)
     private void overrideGetTickDelta(CallbackInfoReturnable<Float> cir) {
-        if (PlayerTimeline.isRecording() || PlayerTimeline.isInPlaybackMode()) {
-            int playheadIndex = PlayerTimeline.playheadFrame;
+        if (PlayerTimeline.isRecording() || PlayerTimeline.isPlaybackEnabled()) {
+            int playheadIndex = PlayerTimeline.getFrame();
             // Calculate the fractional tick: each tick equals 3 frames (60fps / 20tps)
             float tickDelta = (playheadIndex % 3) / 3.0f;
             cir.setReturnValue(tickDelta);

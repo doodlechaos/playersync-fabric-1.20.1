@@ -18,14 +18,14 @@ public class RenderTickCounterMixin {
 
     @Inject(method = "beginRenderTick", at = @At("HEAD"), cancellable = true)
     private void overrideRenderTick(long timeMillis, CallbackInfoReturnable<Integer> cir) {
-        if (PlayerTimeline.isRecording() || (PlayerTimeline.isInPlaybackMode() && !PlayerTimeline.playbackPaused)) {
+        if (PlayerTimeline.isRecording() || (PlayerTimeline.isPlaybackEnabled() && !PlayerTimeline.isPlaybackPaused())) {
             // Calculate a constant frame duration of exactly 1/60th second in milliseconds divided by tickTime.
             float constantFrameDuration = (float) (1000.0 / 60.0) / tickTime;
 
             // Set the last frame duration to our constant value.
             this.lastFrameDuration = constantFrameDuration;
 
-            this.tickDelta = (PlayerTimeline.playheadFrame % 3) / 3.0f;;
+            this.tickDelta = (PlayerTimeline.getFrame() % 3) / 3.0f;;
 
             int ticksToAdvance = 0;
             if(tickDelta == 0 || tickDelta == 1) //Only tick when we're recording or playing back
