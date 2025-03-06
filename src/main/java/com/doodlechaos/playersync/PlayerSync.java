@@ -1,5 +1,7 @@
 package com.doodlechaos.playersync;
 
+import com.doodlechaos.playersync.Sync.InputsManager;
+import com.doodlechaos.playersync.Sync.PlayerKeyframe;
 import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import com.doodlechaos.playersync.command.AudioCommands;
 import com.doodlechaos.playersync.command.RecordCommands;
@@ -10,16 +12,26 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Items;
 import net.minecraft.server.MinecraftServer;
 
 import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.minecraft.client.gui.DrawContext;
 
 public class PlayerSync implements ModInitializer {
 	public static final String MOD_ID = "playersync";
@@ -29,6 +41,7 @@ public class PlayerSync implements ModInitializer {
 
 	public static Quaternionf camRot = new Quaternionf();
 
+	public static boolean OpenScreen = false;
 
 	@Override
 	public void onInitialize() {
@@ -68,6 +81,46 @@ public class PlayerSync implements ModInitializer {
 		ClientTickEvents.START_CLIENT_TICK.register(this::onStartClientTick);
 		ClientTickEvents.END_CLIENT_TICK.register(this::onEndClientTick);
 		ServerTickEvents.END_SERVER_TICK.register(this::onEndServerTick);
+		UseBlockCallback.EVENT.register(this::onUseBlock);
+		AttackBlockCallback.EVENT.register(this::onAttackBlock);
+
+		HudRenderCallback.EVENT.register((matrixStack, tickDelta) -> {
+			MinecraftClient client = MinecraftClient.getInstance();
+			int screenWidth = client.getWindow().getScaledWidth();
+			int screenHeight = client.getWindow().getScaledHeight();
+
+
+			if (PlayerTimeline.isRecording()) {
+				int padding = 5;
+				int dotSize = 15;
+
+				// Calculate positions for the dot
+				int x1 = screenWidth - dotSize - padding;
+				int y1 = padding;
+				int x2 = x1 + dotSize;
+				int y2 = y1 + dotSize;
+
+				DrawContext drawContext = new DrawContext(client, client.getBufferBuilders().getEntityVertexConsumers());
+				drawContext.fill(x1, y1, x2, y2, 0xFFFF0000);
+			}
+		});
+	}
+
+	private ActionResult onAttackBlock(PlayerEntity playerEntity, World world, Hand hand, BlockPos blockPos, Direction direction) {
+		if (playerEntity.getStackInHand(hand).getItem() == Items.WOODEN_AXE) {
+			InputsManager.mostRecentCommand = "//pos1 " + blockPos.getX() + " " + blockPos.getY() + " " + blockPos.getZ();
+			//playerEntity.sendMessage(Text.of("You set pos1 at: " + InputsManager.mostRecentCommand), false);
+		}
+		return ActionResult.PASS;
+	}
+
+	private ActionResult onUseBlock(PlayerEntity playerEntity, World world, Hand hand, BlockHitResult blockHitResult) {
+		if (playerEntity.getStackInHand(hand).getItem() == Items.WOODEN_AXE) {
+			BlockPos blockPos = blockHitResult.getBlockPos();
+			InputsManager.mostRecentCommand = "//pos2 " + blockPos.getX() + " " + blockPos.getY() + " " + blockPos.getZ();
+			//playerEntity.sendMessage(Text.of("You right-clicked a block with a wooden axe! " + InputsManager.mostRecentCommand), false);
+		}
+		return ActionResult.PASS;
 	}
 
 
@@ -77,7 +130,14 @@ public class PlayerSync implements ModInitializer {
 
 	// Client tick for playback (single player)
 	private void onEndClientTick(MinecraftClient client) {
+		if (client.currentScreen == null && OpenScreen) {
+			// Open the custom screen with an initial list of sample strings
+			//Get the commands of the current keyframe
+			PlayerKeyframe keyframe = PlayerTimeline.getCurKeyframe();
 
+			if(keyframe != null)
+				client.setScreen(new MyListScreen(client, keyframe.cmds));
+		}
 	}
 
 	private void onEndServerTick(MinecraftServer minecraftServer)
