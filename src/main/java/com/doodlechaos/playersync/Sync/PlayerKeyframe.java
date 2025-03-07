@@ -12,6 +12,7 @@ public class PlayerKeyframe {
     public final Vec3d playerPos;
     public float playerYaw;
     public float playerPitch;
+    public final Vec3d playerVel;
 
     public final Vec3d camPos;
     public final Quaternionf camRot;
@@ -28,22 +29,22 @@ public class PlayerKeyframe {
      * @param playerPos   The player's position.
      * @param playerYaw   The player's yaw.
      * @param playerPitch The player's pitch.
+     * @param playerVel   The player's velocity.
      * @param camPos      The camera's position.
      * @param camRot      The camera's rotation.
      * @param inputEvents The list of recorded input events.
      * @param cmds        The list of commands.
      */
-    public PlayerKeyframe(long frame, float tickDelta, Vec3d playerPos, float playerYaw, float playerPitch,
+    public PlayerKeyframe(long frame, float tickDelta, Vec3d playerPos, float playerYaw, float playerPitch, Vec3d playerVel,
                           Vec3d camPos, Quaternionf camRot, List<InputEvent> inputEvents, List<String> cmds) {
         this.frame = frame;
         this.tickDelta = tickDelta;
         this.playerPos = playerPos;
         this.playerYaw = playerYaw;
         this.playerPitch = playerPitch;
-
+        this.playerVel = playerVel;
         this.camPos = camPos;
         this.camRot = camRot;
-
         this.recordedInputEvents = inputEvents;
         this.cmds = cmds;
     }
@@ -51,7 +52,7 @@ public class PlayerKeyframe {
     /**
      * Constructs a PlayerKeyframe from a single-line string.
      * Expected format:
-     * frame=123|tickDelta=0.0|playerPos=[1.234,2.345,3.456]|playerYaw=90.0|playerPitch=45.0|camPos=[0.0,0.0,0.0]|camRot=[0.0,0.0,0.0,1.0]|inputEvents=[KeyboardEvent;key=65;scancode=30;action=1;modifiers=0,MouseButtonEvent;button=0;action=1;mods=0]|cmds=[cmd1,cmd2]
+     * frame=123|tickDelta=0.0|playerPos=[1.234,2.345,3.456]|playerYaw=90.0|playerPitch=45.0|playerVel=[0.0,0.0,0.0]|camPos=[0.0,0.0,0.0]|camRot=[0.0,0.0,0.0,1.0]|inputEvents=[...|cmds=[cmd1,cmd2]
      */
     public PlayerKeyframe(String line) {
         String[] parts = line.split("\\|");
@@ -60,6 +61,8 @@ public class PlayerKeyframe {
         Vec3d pos = null;
         float yaw = 0;
         float pitch = 0;
+        // Default velocity is set to (0,0,0)
+        Vec3d vel = new Vec3d(0, 0, 0);
         // Initialize with defaults for camPos and camRot in case they are missing in the line
         Vec3d camPos = new Vec3d(0, 0, 0);
         Quaternionf camRot = new Quaternionf(0, 0, 0, 1);
@@ -83,6 +86,14 @@ public class PlayerKeyframe {
                 yaw = Float.parseFloat(part.substring("playerYaw=".length()));
             } else if (part.startsWith("playerPitch=")) {
                 pitch = Float.parseFloat(part.substring("playerPitch=".length()));
+            } else if (part.startsWith("playerVel=")) {
+                int start = part.indexOf('[');
+                int end = part.indexOf(']');
+                String[] coords = part.substring(start + 1, end).split(",");
+                double vx = Double.parseDouble(coords[0]);
+                double vy = Double.parseDouble(coords[1]);
+                double vz = Double.parseDouble(coords[2]);
+                vel = new Vec3d(vx, vy, vz);
             } else if (part.startsWith("camPos=")) {
                 int start = part.indexOf('[');
                 int end = part.indexOf(']');
@@ -127,6 +138,7 @@ public class PlayerKeyframe {
         this.playerPos = pos;
         this.playerYaw = yaw;
         this.playerPitch = pitch;
+        this.playerVel = vel;
         this.camPos = camPos;
         this.camRot = camRot;
         this.recordedInputEvents = events;
@@ -136,7 +148,7 @@ public class PlayerKeyframe {
     /**
      * Serializes the PlayerKeyframe to a single line of text with full precision.
      * Format:
-     * frame=123|tickDelta=0.0|playerPos=[1.234,2.345,3.456]|playerYaw=90.0|playerPitch=45.0|camPos=[0.0,0.0,0.0]|camRot=[0.0,0.0,0.0,1.0]|inputEvents=[KeyboardEvent;key=65;scancode=30;action=1;modifiers=0,MouseButtonEvent;button=0;action=1;mods=0]|cmds=[cmd1,cmd2]
+     * frame=123|tickDelta=0.0|playerPos=[1.234,2.345,3.456]|playerYaw=90.0|playerPitch=45.0|playerVel=[0.0,0.0,0.0]|camPos=[0.0,0.0,0.0]|camRot=[0.0,0.0,0.0,1.0]|inputEvents=[...|cmds=[cmd1,cmd2]
      */
     public String ToLine() {
         StringBuilder sb = new StringBuilder();
@@ -145,6 +157,7 @@ public class PlayerKeyframe {
         sb.append("|playerPos=[").append(playerPos.x).append(",").append(playerPos.y).append(",").append(playerPos.z).append("]");
         sb.append("|playerYaw=").append(playerYaw);
         sb.append("|playerPitch=").append(playerPitch);
+        sb.append("|playerVel=[").append(playerVel.x).append(",").append(playerVel.y).append(",").append(playerVel.z).append("]");
         sb.append("|camPos=[").append(camPos.x).append(",").append(camPos.y).append(",").append(camPos.z).append("]");
         sb.append("|camRot=[").append(camRot.x).append(",").append(camRot.y).append(",").append(camRot.z).append(",").append(camRot.w).append("]");
         sb.append("|inputEvents=[");
@@ -166,3 +179,4 @@ public class PlayerKeyframe {
         return sb.toString();
     }
 }
+

@@ -24,6 +24,7 @@ public class InputsManager {
     private static final List<InputEvent> recordedInputsBuffer = new ArrayList<>();
 
     private static boolean wasRKeyDown = false;
+    private static boolean wasCKeyDown = false;
     private static boolean wasSpaceKeyDown = false;
     private static boolean wasPKeyDown = false;
     private static boolean wasPeriodKeyDown = false;
@@ -64,28 +65,41 @@ public class InputsManager {
         if(MinecraftClient.getInstance().currentScreen instanceof ChatScreen)
             return;
 
+        if(PlayerTimeline.isCountdownActive())
+            return;
+
         long window = MinecraftClient.getInstance().getWindow().getHandle();
 
         // Toggle playback mode (P key)
         boolean isPKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_P);
         if (isPKeyDown && !wasPKeyDown) {
-            PlayerTimeline.setPlaybackEnabled(!PlayerTimeline.isPlaybackEnabled());
+            PlayerTimeline.setPlaybackEnabled(!PlayerTimeline.isPlaybackEnabled(), true);
             LOGGER.info("Detected toggle playback mode key press");
         }
         wasPKeyDown = isPKeyDown;
 
+        // Toggle Recording (R key)
+        boolean isRKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_R);
+        if (isRKeyDown && !wasRKeyDown) {
+            if(PlayerTimeline.isRecording())
+                PlayerTimeline.setRecording(false);
+            else if(!PlayerTimeline.isCountdownActive())
+                PlayerTimeline.startRecordingCountdown();
+        }
+        wasRKeyDown = isRKeyDown;
+
         if (!PlayerTimeline.isPlaybackEnabled())
             return;
 
-        // Toggle playback paused (R key)
-        boolean isRKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_R);
-        if (isRKeyDown && !wasRKeyDown) {
+        // Save most recent command to keyframe (C key)
+        boolean isCKeyDown = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_C);
+        if (isCKeyDown && !wasCKeyDown) {
             PlayerKeyframe keyframe = PlayerTimeline.getCurKeyframe();
 
             if(keyframe != null)
                 PlayerTimeline.addCommandToKeyframe(InputsManager.mostRecentCommand, keyframe);
         }
-        wasRKeyDown = isRKeyDown;
+        wasCKeyDown = isCKeyDown;
 
         if(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT))
             PlayerTimeline.advanceFrames(InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT_SHIFT) ? 2 : 1);
@@ -139,9 +153,18 @@ public class InputsManager {
         Keyboard keyboard = client.keyboard; // Adjust based on how you access your Keyboard instance
         long window = client.getWindow().getHandle();
 
-        for (int key = 0; key <= GLFW.GLFW_KEY_LAST; key++) {
-            // The scancode is set to 0 and modifiers to 0 for simplicity
-            keyboard.onKey(window, key, 0, GLFW.GLFW_RELEASE, 0);
+        for (int key = GLFW.GLFW_KEY_SPACE; key <= GLFW.GLFW_KEY_LAST; key++) {
+            // Skip F3 to prevent the debug menu from toggling.
+            if (key == GLFW.GLFW_KEY_F3)
+                continue;
+
+            if(InputUtil.isKeyPressed(window, key)) //<< Adding this?
+                continue;
+
+            int scancode = GLFW.glfwGetKeyScancode(key);
+            if(scancode <= 0)
+                continue;
+            keyboard.onKey(window, key, scancode, GLFW.GLFW_RELEASE, 0);
         }
         LOGGER.info("Released all keys");
     }

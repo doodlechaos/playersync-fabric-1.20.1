@@ -1,13 +1,9 @@
 package com.doodlechaos.playersync.command;
 
-import com.doodlechaos.playersync.PlayerSync;
 import com.doodlechaos.playersync.Sync.AudioSync;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.FloatArgumentType;
-import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec3d;
 
 import static net.minecraft.server.command.CommandManager.literal;
 
@@ -18,7 +14,7 @@ public class AudioCommands {
         dispatcher.register(literal("audio")
                 .then(literal("load")
                         .executes(ctx -> {
-                            AudioSync.loadAudio("C:\\Users\\marky\\Downloads\\Alone.ogg");
+                            AudioSync.loadAudio("C:\\Users\\marky\\Downloads\\mainThemeRemix.ogg");
                             ctx.getSource().sendMessage(Text.literal("Loaded Audio"));
                             return 1;
                         })

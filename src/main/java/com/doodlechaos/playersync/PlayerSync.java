@@ -52,18 +52,21 @@ public class PlayerSync implements ModInitializer {
 
 		HudRenderCallback.EVENT.register((matrixStack, tickDelta) -> {
 			MinecraftClient client = MinecraftClient.getInstance();
-			String debugText = "PartialTick: " + client.getTickDelta() + " TickServerFlag: " + TickServerFlag;
+
+			// Use fixed-width formatting for tick delta (assumed to be a float)
+			String debugText = String.format("PartialTick: %6.2f  TickServerFlag: %s", client.getTickDelta(), TickServerFlag);
 			// Draw the text at position (10, 10) with white color (0xFFFFFF)
 			matrixStack.drawText(client.textRenderer, debugText, 10, 10, 0xFFFFFF, false);
 
 			Vector3f euler = new Vector3f();
 			camRot.getEulerAnglesYXZ(euler);
-			float xDeg = (float)Math.toDegrees(euler.x);
-			float yDeg = (float)Math.toDegrees(euler.y);
-			float zDeg = (float)Math.toDegrees(euler.z);
-			String camRotDegreesText = String.format("camRot: x=%.2f°, y=%.2f°, z=%.2f°", xDeg, yDeg, zDeg);
-			matrixStack.drawText(client.textRenderer, camRotDegreesText, 10, 30, 0xFFFFFF, false);
+			float xDeg = (float) Math.toDegrees(euler.x);
+			float yDeg = (float) Math.toDegrees(euler.y);
+			float zDeg = (float) Math.toDegrees(euler.z);
 
+			// Format with fixed-width fields to avoid jitter (adjust width as needed)
+			String camRotDegreesText = String.format("camRot: x=%7.2f°, y=%7.2f°, z=%7.2f°", xDeg, yDeg, zDeg);
+			matrixStack.drawText(client.textRenderer, camRotDegreesText, 10, 30, 0xFFFFFF, false);
 		});
 	}
 

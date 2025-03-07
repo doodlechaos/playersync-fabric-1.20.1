@@ -28,45 +28,124 @@ public class PlayerTimeline {
     private static boolean playerDetatched = false;
 
     private static int frame = 0;
+    private static int prevFrame = 0;
+
+    private static final List<PlayerKeyframe> recordedKeyframes = new ArrayList<>();
+
+    private static final int COUNTDOWN_DURATION_FRAMES = 3 * 60; // 3 seconds at 60 fps
+    private static boolean countdownActive = false;
+    private static int countdownStartFrame = 0;
 
     //Getters
     public static boolean isRecording(){return recording;}
     public static boolean isPlaybackEnabled(){return playbackEnabled;}
     public static boolean isPlaybackPaused(){return playbackPaused; }
     public static boolean isPlayerDetatched() {return playerDetatched;}
-    public static int GetRecFrame(){ return getRecordedKeyframes().size();};
+    public static boolean isCountdownActive(){return countdownActive;}
+    public static int getRecFrame(){ return getRecordedKeyframes().size();};
+    public static int getFrame(){ return frame; }
 
     public static void registerDebugText(){
         HudRenderCallback.EVENT.register((matrixStack, tickDelta) -> {
             MinecraftClient client = MinecraftClient.getInstance();
             String debugText = "inPlaybackMode:" + playbackEnabled;
             if(isRecording()){
-                debugText += "recFrame: " + GetRecFrame();
+                debugText += "recFrame: " + getRecFrame();
             }
             if(isPlaybackEnabled()){
                 debugText += " playbackPaused:" + playbackPaused + " frame: " + frame;
             }
             // Draw the text at position (10, 10) with white color (0xFFFFFF)
             matrixStack.drawText(client.textRenderer, debugText, 10, 20, 0xFFFFFF, false);
+
+
+            if (isCountdownActive()) {
+                // How many frames have elapsed since we started the countdown?
+                int framesElapsed = getFrame() - countdownStartFrame;
+                int framesLeft = COUNTDOWN_DURATION_FRAMES - framesElapsed;
+
+                // Convert frames to seconds (approx).
+                float countdownSeconds = framesLeft / 60.0f;
+
+                if (countdownSeconds <= 0) {
+                    // The countdown ended
+                    countdownActive = false;
+                    // Immediately switch to actual recording
+                    setPlaybackEnabled(false, false);
+                    setRecording(true);
+                    debugText += " [Countdown finished -> Recording]";
+                } else {
+                    // Show a big countdown (rounded up) in the middle of the screen
+                    int centerX = client.getWindow().getScaledWidth() / 2;
+                    int centerY = client.getWindow().getScaledHeight() / 2;
+                    int displaySeconds = (int)Math.ceil(countdownSeconds);
+
+                    // You can use normal draw text or larger text – below is a simple example
+                    matrixStack.drawText(
+                            client.textRenderer,
+                            "Recording in: " + displaySeconds,
+                            centerX - 50,
+                            centerY,
+                            0xFF0000,  // red
+                            false
+                    );
+                }
+            }
+
         });
     }
 
+    public static void update(){
+        if(isPlaybackEnabled()){
+            PlayerKeyframe keyframe = getCurKeyframe();
 
-    private static final List<PlayerKeyframe> recordedKeyframes = new ArrayList<>();
+            if(prevFrame != getFrame())
+                InputsManager.SimulateInputsFromKeyframe(keyframe);
+            prevFrame = getFrame();
+
+            setPlayerFromKeyframe(keyframe);
+
+            if(!isPlaybackPaused())
+                advanceFrames(1);
+        }
+        if(frame == getRecordedKeyframes().size() && countdownActive) //Check if we are finishing a countdown
+        {
+            //TODO: I realize I have a difficult challenge here. I need to transition from simulated keyboard input to manual keyboard input seamlessly. Currently, I rely on events for when a key goes up and down, I don't have the information of all the keys that are held down every keyframe, just the changes. This is leading to challenges, because if I want to resume from a specific point in time,
+            // I don't know which keys should be held down when I begin the manual resume. It's just going to be WASD left shift, space that cause problems. Right now I'm having problems with if I hold a key during the countdown, when we switch from the countdown playback to recording, the key that I am already holding down is no longer detected as held.
+            countdownActive = false;
+            setPlaybackEnabled(false, true);
+            setRecording(true);
+        }
+    }
+
+
+    public static void startRecordingCountdown(){
+        // If fewer than 3 seconds of frames exist, we'll just start from the beginning
+        int totalFrames = getRecordedKeyframes().size();
+        int targetStart = Math.max(0, totalFrames - COUNTDOWN_DURATION_FRAMES);
+
+        setFrame(targetStart);
+        setPlaybackEnabled(true, false);
+        setPlaybackPaused(false);
+
+        countdownActive = true;
+        countdownStartFrame = targetStart;
+        LOGGER.info("Starting recording countdown!");
+    }
 
     public static void setRecording(boolean value)
     {
         recording = value;
-        setFrame(GetRecFrame());
+        setFrame(getRecFrame());
     }
 
-    public static void setPlaybackEnabled(boolean value){
+    public static void setPlaybackEnabled(boolean value, boolean releaseKeysIfNecessary){
         if(playbackEnabled == value)
             return;
 
         playbackEnabled = value;
 
-        if(!playbackEnabled)
+        if(!playbackEnabled && releaseKeysIfNecessary)
             InputsManager.releaseAllKeys();
     }
 
@@ -97,9 +176,13 @@ public class PlayerTimeline {
         setPlayerDetatched(false);
     }
 
-    public static int getFrame(){ return frame; }
 
-    public static void setFrame(int value){ frame = value; }
+    public static void setFrame(int value){
+        if(frame == value)
+            return;
+        frame = value;
+        setPlayerDetatched(false);
+    }
 
     public static List<PlayerKeyframe> getRecordedKeyframes() {
         return recordedKeyframes;
@@ -109,14 +192,28 @@ public class PlayerTimeline {
         recordedKeyframes.clear();
     }
 
+    public static void pruneKeyframesAfterPlayhead(){
+        if (recordedKeyframes.size() <= frame + 1) {
+            return;
+        }
+        recordedKeyframes.subList(frame + 1, recordedKeyframes.size()).clear();
+    }
+
     public static void addCommandToKeyframe(String cmd, PlayerKeyframe keyframe){
         keyframe.cmds.add(cmd);
 
         MinecraftClient client = MinecraftClient.getInstance();
         if(client.player != null)
-            client.player.sendMessage(Text.literal("Added [" + cmd + "] to keyframe " + frame)); //TODO: This is just sending the command as a message. How can I make it so that it acts as if the player send the message in the text box so it actually executes the command as if it came from them?
+            client.player.sendMessage(Text.literal("Added [" + cmd + "] to keyframe " + frame));
     }
+    public static PlayerKeyframe getCurKeyframe(){
+        List<PlayerKeyframe> frames = PlayerTimeline.getRecordedKeyframes();
 
+        if(frame < 0 || frame >= frames.size())
+            return null;
+
+        return frames.get(frame);
+    }
     /**
      * Records a new keyframe that captures both player and input data.
      */
@@ -134,7 +231,6 @@ public class PlayerTimeline {
         }
         Vec3d lerpedPlayerPos = player.getLerpedPos(tickDelta);
 
-        // Use the number of keyframes as the frame number (or use your own frame counter if available)
         long frameNumber = recordedKeyframes.size();
 
         Camera cam = client.gameRenderer.getCamera();
@@ -143,8 +239,6 @@ public class PlayerTimeline {
 
         camRot = new Quaternionf(camRot.x, camRot.y, camRot.z, camRot.w);
 
-        LOGGER.info("cam rot recorded: " + camRot);
-
         // Create a merged keyframe with both keyboard and mouse inputs.
         PlayerKeyframe keyframe = new PlayerKeyframe(
                 frameNumber,
@@ -152,27 +246,18 @@ public class PlayerTimeline {
                 lerpedPlayerPos,
                 player.getYaw(tickDelta),
                 player.getPitch(tickDelta),
+                player.getVelocity(),
                 camPos,
                 camRot,
                 new ArrayList<>(InputsManager.getRecordedInputsBuffer()),
                 new ArrayList<>()
         );
 
-        // Add the new keyframe to our in-memory list.
         recordedKeyframes.add(keyframe);
 
         setFrame(getRecordedKeyframes().size());
 
         InputsManager.clearRecordedInputsBuffer();
-    }
-
-    public static PlayerKeyframe getCurKeyframe(){
-        List<PlayerKeyframe> frames = PlayerTimeline.getRecordedKeyframes();
-
-        if(frame < 0 || frame >= frames.size())
-            return null;
-
-        return frames.get(frame);
     }
 
     public static void setPlayerFromKeyframe(PlayerKeyframe keyframe){
@@ -188,7 +273,6 @@ public class PlayerTimeline {
             return;
 
         if(frame >= PlayerTimeline.getRecordedKeyframes().size()){
-            //setPlayingBack(false, 0);
             playbackPaused = true;
 
             if(VideoRenderer.isRendering()){
@@ -205,6 +289,7 @@ public class PlayerTimeline {
         player.updatePosition(keyframe.playerPos.x, keyframe.playerPos.y, keyframe.playerPos.z);
         player.setYaw(keyframe.playerYaw);
         player.setPitch(keyframe.playerPitch);
+        player.setVelocity(keyframe.playerVel);
 
         Vector3f euler = new Vector3f();
         keyframe.camRot.getEulerAnglesYXZ(euler);
@@ -224,11 +309,9 @@ public class PlayerTimeline {
                 (int) keyframe.camPos.z
         );
 
-        // -- Clone the quaternion to avoid aliasing issues --
         Quaternionf newRot = new Quaternionf(keyframe.camRot);
         cam.getRotation().set(newRot);
 
-        // -- Update the basis vectors --
         Vector3f horizontal = new Vector3f(0.0f, 0.0f, 1.0f).rotate(newRot);
         Vector3f vertical = new Vector3f(0.0f, 1.0f, 0.0f).rotate(newRot);
         Vector3f diagonal = new Vector3f(1.0f, 0.0f, 0.0f).rotate(newRot);
@@ -237,7 +320,6 @@ public class PlayerTimeline {
         cam.getVerticalPlane().set(vertical);
         cam.getDiagonalPlane().set(diagonal);
 
-        // -- Convert the quaternion to Euler angles (Y-X-Z order) --
         Vector3f euler = new Vector3f();
         newRot.getEulerAnglesYXZ(euler);
 
@@ -281,8 +363,5 @@ public class PlayerTimeline {
             LOGGER.error("Error loading recording from file: " + recFile.getAbsolutePath(), e);
         }
     }
-
-
-
 
 }

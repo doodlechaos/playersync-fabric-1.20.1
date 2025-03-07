@@ -72,7 +72,7 @@ public class VideoRenderer {
         }
         rendering = true;
         PlayerTimeline.setFrame(0);
-        PlayerTimeline.setPlaybackEnabled(true);
+        PlayerTimeline.setPlaybackEnabled(true, true);
 
         loadConfig(); // load configuration from file
 

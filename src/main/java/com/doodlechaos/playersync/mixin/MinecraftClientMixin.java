@@ -18,9 +18,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin {
 
-    @Unique
-    private static int prevPlayheadFrame = 0;
-
     //When recording or playing back, render is called once every video frame
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onClientRenderStart(CallbackInfo ci) {
@@ -32,18 +29,7 @@ public class MinecraftClientMixin {
             return;
         }
 
-        if(PlayerTimeline.isPlaybackEnabled()){
-            PlayerKeyframe keyframe = PlayerTimeline.getCurKeyframe();
-
-            if(prevPlayheadFrame != PlayerTimeline.getFrame())
-                InputsManager.SimulateInputsFromKeyframe(keyframe);
-            prevPlayheadFrame = PlayerTimeline.getFrame();
-
-            PlayerTimeline.setPlayerFromKeyframe(keyframe);
-
-            if(!PlayerTimeline.isPlaybackPaused())
-                PlayerTimeline.advanceFrames(1);
-        }
+        PlayerTimeline.update();
     }
     @Inject(method = "render", at = @At("TAIL"))
     private void onClientRenderFinish(CallbackInfo ci) {
@@ -79,11 +65,9 @@ public class MinecraftClientMixin {
 
 
 
-
     //Tick is called from the render loop when necessary
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onClientTick(CallbackInfo ci) {
-
 
         if (PlayerTimeline.isRecording() || PlayerTimeline.isPlaybackEnabled()) {
             PlayerSync.TickServerFlag = true;

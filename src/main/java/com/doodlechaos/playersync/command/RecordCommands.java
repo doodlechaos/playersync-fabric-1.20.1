@@ -16,15 +16,13 @@ public class RecordCommands {
         dispatcher.register(literal("rec")
                 // No argument version – uses default value 10
                 .executes(ctx -> {
-                    //TODO: Get a 3 2 1 countdown for the recording, and put a red dot in the top right of the screen while recording
-                    //TODO: Add a hotkey for starting and stopping recording
                     if(PlayerTimeline.isRecording())
                     {
                         PlayerTimeline.setRecording(false);
                         ctx.getSource().sendMessage(Text.literal("Stopped Recording: " + PlayerTimeline.isRecording()));
                     }
                     else{
-                        PlayerTimeline.setRecording(true);
+                        PlayerTimeline.startRecordingCountdown();
                         ctx.getSource().sendMessage(Text.literal("Starting Recording: " + PlayerTimeline.isRecording()));
                     }
 
@@ -39,8 +37,12 @@ public class RecordCommands {
                 )
                 .then(literal("prune")
                         .executes(ctx -> {
-                            PlayerTimeline.clearRecordedKeyframes();
-                            ctx.getSource().sendMessage(Text.literal("Cleared recorded keyframes"));
+                            int recKeysBefore = PlayerTimeline.getRecordedKeyframes().size();
+                            PlayerTimeline.pruneKeyframesAfterPlayhead();
+                            int recKeysAfter = PlayerTimeline.getRecordedKeyframes().size();
+                            ctx.getSource().sendMessage(Text.literal(
+                                    String.format("Cleared %d recorded keyframes", recKeysBefore - recKeysAfter)
+                            ));
                             return 1;
                         })
                 )
