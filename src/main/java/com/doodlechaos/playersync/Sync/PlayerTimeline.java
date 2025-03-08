@@ -29,6 +29,7 @@ public class PlayerTimeline {
 
     private static int frame = 0;
     private static int prevFrame = 0;
+    public static void updatePrevFrame(){prevFrame = frame;}
 
     private static final List<PlayerKeyframe> recordedKeyframes = new ArrayList<>();
 
@@ -44,6 +45,7 @@ public class PlayerTimeline {
     public static boolean isCountdownActive(){return countdownActive;}
     public static int getRecFrame(){ return getRecordedKeyframes().size();};
     public static int getFrame(){ return frame; }
+    public static int getPrevFrame() {return prevFrame; }
 
     public static void registerDebugText(){
         HudRenderCallback.EVENT.register((matrixStack, tickDelta) -> {
@@ -97,21 +99,18 @@ public class PlayerTimeline {
 
     public static void update(){
         if(isPlaybackEnabled()){
+            if(!isPlaybackPaused())
+                advanceFrames(1);
+
             PlayerKeyframe keyframe = getCurKeyframe();
+            setPlayerFromKeyframe(keyframe);
 
             if(prevFrame != getFrame())
                 InputsManager.SimulateInputsFromKeyframe(keyframe);
-            prevFrame = getFrame();
 
-            setPlayerFromKeyframe(keyframe);
-
-            if(!isPlaybackPaused())
-                advanceFrames(1);
         }
         if(frame == getRecordedKeyframes().size() && countdownActive) //Check if we are finishing a countdown
         {
-            //TODO: I realize I have a difficult challenge here. I need to transition from simulated keyboard input to manual keyboard input seamlessly. Currently, I rely on events for when a key goes up and down, I don't have the information of all the keys that are held down every keyframe, just the changes. This is leading to challenges, because if I want to resume from a specific point in time,
-            // I don't know which keys should be held down when I begin the manual resume. It's just going to be WASD left shift, space that cause problems. Right now I'm having problems with if I hold a key during the countdown, when we switch from the countdown playback to recording, the key that I am already holding down is no longer detected as held.
             countdownActive = false;
             setPlaybackEnabled(false, true);
             setRecording(true);

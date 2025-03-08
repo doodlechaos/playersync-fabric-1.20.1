@@ -3,7 +3,6 @@ package com.doodlechaos.playersync.mixin;
 import com.doodlechaos.playersync.PlayerSync;
 import com.doodlechaos.playersync.Sync.AudioSync;
 import com.doodlechaos.playersync.Sync.InputsManager;
-import com.doodlechaos.playersync.Sync.PlayerKeyframe;
 import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import com.doodlechaos.playersync.VideoRenderer;
 import net.minecraft.client.MinecraftClient;
@@ -42,6 +41,7 @@ public class MinecraftClientMixin {
             VideoRenderer.CaptureFrame();
         }
 
+        PlayerTimeline.updatePrevFrame();
     }
 
     @Unique
@@ -63,13 +63,12 @@ public class MinecraftClientMixin {
         AudioSync.updateAudio(playheadTime);
     }
 
-
-
     //Tick is called from the render loop when necessary
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onClientTick(CallbackInfo ci) {
 
-        if (PlayerTimeline.isRecording() || PlayerTimeline.isPlaybackEnabled()) {
+        //Only tick server if we're recording or playing back, AND the timeline frame has changed
+        if ((PlayerTimeline.isRecording() || PlayerTimeline.isPlaybackEnabled()) && PlayerTimeline.getPrevFrame() != PlayerTimeline.getFrame()) {
             PlayerSync.TickServerFlag = true;
         }
     }
@@ -77,6 +76,8 @@ public class MinecraftClientMixin {
     //Tick is called from the render loop when necessary
     @Inject(method = "tick", at = @At("TAIL"), cancellable = true)
     private void onEndClientTick(CallbackInfo ci) {
+
+        //Manually tick the server and wait for its completion here?
 
     }
 

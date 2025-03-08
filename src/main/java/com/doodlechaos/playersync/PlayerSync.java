@@ -1,5 +1,6 @@
 package com.doodlechaos.playersync;
 
+import com.doodlechaos.playersync.Sync.AudioSync;
 import com.doodlechaos.playersync.Sync.InputsManager;
 import com.doodlechaos.playersync.Sync.PlayerKeyframe;
 import com.doodlechaos.playersync.Sync.PlayerTimeline;
@@ -9,24 +10,29 @@ import com.doodlechaos.playersync.command.RenderCommands;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.server.MinecraftServer;
 
 import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldEvents;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.slf4j.Logger;
@@ -49,6 +55,8 @@ public class PlayerSync implements ModInitializer {
 		registerCommands();
 		registerEvents();
 		PlayerTimeline.registerDebugText();
+
+		//TODO: How can I run an anonymous method once on the first minecraft tick?
 
 		HudRenderCallback.EVENT.register((matrixStack, tickDelta) -> {
 			MinecraftClient client = MinecraftClient.getInstance();
@@ -86,6 +94,7 @@ public class PlayerSync implements ModInitializer {
 		ServerTickEvents.END_SERVER_TICK.register(this::onEndServerTick);
 		UseBlockCallback.EVENT.register(this::onUseBlock);
 		AttackBlockCallback.EVENT.register(this::onAttackBlock);
+		ClientPlayConnectionEvents.JOIN.register(this::onPlayerJoinWorld);
 
 		HudRenderCallback.EVENT.register((matrixStack, tickDelta) -> {
 			MinecraftClient client = MinecraftClient.getInstance();
@@ -107,6 +116,13 @@ public class PlayerSync implements ModInitializer {
 				drawContext.fill(x1, y1, x2, y2, 0xFFFF0000);
 			}
 		});
+	}
+
+	private void onPlayerJoinWorld(ClientPlayNetworkHandler clientPlayNetworkHandler, PacketSender packetSender, MinecraftClient minecraftClient) {
+		String audioPath = "C:\\Users\\marky\\Downloads\\mainThemeRemix.ogg";
+		AudioSync.loadAudio(audioPath);
+		if(minecraftClient.player != null)
+			minecraftClient.player.sendMessage(Text.literal("loaded audio: " + audioPath));
 	}
 
 	private ActionResult onAttackBlock(PlayerEntity playerEntity, World world, Hand hand, BlockPos blockPos, Direction direction) {

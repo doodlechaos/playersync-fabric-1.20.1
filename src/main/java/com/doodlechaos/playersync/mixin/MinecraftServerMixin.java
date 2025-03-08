@@ -8,6 +8,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import static com.doodlechaos.playersync.PlayerSync.LOGGER;
+
 
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
@@ -15,8 +17,10 @@ public abstract class MinecraftServerMixin {
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onTick(CallbackInfo ci){
 
-        //Never allow a server tick unless right after a client tick
-        if ((PlayerTimeline.isRecording() || PlayerTimeline.isPlaybackEnabled()) && !PlayerSync.TickServerFlag) {
+        if(!PlayerTimeline.isRecording() && !PlayerTimeline.isPlaybackEnabled())
+            return;
+
+        if (!PlayerSync.TickServerFlag) {
             ci.cancel();
             return;
         }

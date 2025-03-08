@@ -5,6 +5,7 @@ import net.minecraft.client.render.RenderTickCounter;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -16,13 +17,15 @@ public class RenderTickCounterMixin {
     @Shadow public float lastFrameDuration;
     @Shadow @Final private float tickTime;
 
+    @Unique
+    private int counter = 0;
+
     @Inject(method = "beginRenderTick", at = @At("HEAD"), cancellable = true)
     private void overrideRenderTick(long timeMillis, CallbackInfoReturnable<Integer> cir) {
-        if (PlayerTimeline.isRecording() || (PlayerTimeline.isPlaybackEnabled() && !PlayerTimeline.isPlaybackPaused())) {
-            // Calculate a constant frame duration of exactly 1/60th second in milliseconds divided by tickTime.
-            float constantFrameDuration = (float) (1000.0 / 60.0) / tickTime;
 
-            // Set the last frame duration to our constant value.
+        if(PlayerTimeline.isRecording() || (PlayerTimeline.isPlaybackEnabled())){
+
+            float constantFrameDuration = (float) (1000.0 / 60.0) / tickTime;
             this.lastFrameDuration = constantFrameDuration;
 
             this.tickDelta = (PlayerTimeline.getFrame() % 3) / 3.0f;;
@@ -31,9 +34,18 @@ public class RenderTickCounterMixin {
             if(tickDelta == 0 || tickDelta == 1) //Only tick when we're recording or playing back
                 ticksToAdvance = 1;
 
+            if(PlayerTimeline.isPlaybackPaused()){
+                //Tick every 3rd frame manually
+                counter++;
+                ticksToAdvance = 0;
+                if(counter >= 2){
+                    ticksToAdvance = 1;
+                    counter = 0;
+                }
+            }
+
             // Return our computed tick advance, cancelling the rest of the method.
             cir.setReturnValue(ticksToAdvance);
         }
     }
-
 }
