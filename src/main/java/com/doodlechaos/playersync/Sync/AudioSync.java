@@ -220,9 +220,9 @@ public class AudioSync {
             float offsetError = timelineSeconds - audioOffset;
             if (Math.abs(offsetError) > OFFSET_TOLERANCE) {
                 AL10.alSourcef(forwardSourceId, AL_SEC_OFFSET, timelineSeconds);
-                LOGGER.info(String.format(
+/*                LOGGER.info(String.format(
                         "Drift correction (forward): timeline=%.3f, audio=%.3f, error=%.3f",
-                        timelineSeconds, audioOffset, offsetError));
+                        timelineSeconds, audioOffset, offsetError));*/
             }
         } else {
             // Target offset for reverse source is audioLengthSeconds - timelineSeconds.

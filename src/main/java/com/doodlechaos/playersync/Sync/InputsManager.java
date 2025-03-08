@@ -32,6 +32,7 @@ public class InputsManager {
 
     // Called from your mixin to record a mouse button event.
     public static void recordMouseButtonEvent(MouseButtonEvent event) {
+        LOGGER.info("Recorded mouse button event on frame: " + PlayerTimeline.getFrame() + " " + event.action);
         recordedInputsBuffer.add(event);
     }
 
@@ -176,6 +177,7 @@ public class InputsManager {
 
         MinecraftClient client = MinecraftClient.getInstance();
         long window = client.getWindow().getHandle();
+
 
         for (InputEvent ie : keyframe.recordedInputEvents) {
             ie.simulate(window, client);

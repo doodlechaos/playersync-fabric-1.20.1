@@ -1,7 +1,10 @@
 package com.doodlechaos.playersync.Sync.InputEventContainers;
 
+import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import net.minecraft.client.MinecraftClient;
 import com.doodlechaos.playersync.mixin.accessor.MouseAccessor;
+
+import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 
 public class MouseButtonEvent extends InputEvent {
     public final int button;
@@ -41,5 +44,6 @@ public class MouseButtonEvent extends InputEvent {
     @Override
     public void simulate(long window, MinecraftClient client) {
         ((MouseAccessor) client.mouse).callOnMouseButton(window, button, action, mods);
+        LOGGER.info("Simulating mouse button on frame: " + PlayerTimeline.getFrame() + " prevFrame: " + PlayerTimeline.getPrevFrame());
     }
 }

@@ -42,6 +42,10 @@ public class MinecraftClientMixin {
         }
 
         PlayerTimeline.updatePrevFrame();
+
+        if(PlayerTimeline.isRecording() ||
+                (PlayerTimeline.isPlaybackEnabled() && !PlayerTimeline.isPlaybackPaused()))
+            PlayerTimeline.advanceFrames(1);
     }
 
     @Unique
@@ -67,8 +71,15 @@ public class MinecraftClientMixin {
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onClientTick(CallbackInfo ci) {
 
+        if(PlayerTimeline.isRecording()){
+            PlayerSync.LOGGER.info("Ticking client on frame: " + PlayerTimeline.getFrame());
+            PlayerSync.TickServerFlag = true;
+            return;
+        }
+
         //Only tick server if we're recording or playing back, AND the timeline frame has changed
-        if ((PlayerTimeline.isRecording() || PlayerTimeline.isPlaybackEnabled()) && PlayerTimeline.getPrevFrame() != PlayerTimeline.getFrame()) {
+        if (PlayerTimeline.isPlaybackEnabled() && PlayerTimeline.getPrevFrame() != PlayerTimeline.getFrame()) {
+            PlayerSync.LOGGER.info("Ticking client on frame: " + PlayerTimeline.getFrame());
             PlayerSync.TickServerFlag = true;
         }
     }
@@ -81,10 +92,6 @@ public class MinecraftClientMixin {
 
     }
 
-    /**
-     * Overrides getTickDelta to return a custom value based on the 60 FPS playheadIndex,
-     * so that 3 rendered frames correspond to one Minecraft tick.
-     */
     @Inject(method = "getTickDelta", at = @At("HEAD"), cancellable = true)
     private void overrideGetTickDelta(CallbackInfoReturnable<Float> cir) {
         if (PlayerTimeline.isRecording() || PlayerTimeline.isPlaybackEnabled()) {

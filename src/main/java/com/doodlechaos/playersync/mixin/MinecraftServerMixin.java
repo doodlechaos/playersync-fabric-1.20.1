@@ -14,15 +14,21 @@ import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
 
+
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onTick(CallbackInfo ci){
 
-        if(!PlayerTimeline.isRecording() && !PlayerTimeline.isPlaybackEnabled())
+        if(!PlayerTimeline.isRecording() && !PlayerTimeline.isPlaybackEnabled()){
+            //LOGGER.info("ticking server");
             return;
+        }
 
         if (!PlayerSync.TickServerFlag) {
+            //LOGGER.info("Blocking server tick");
             ci.cancel();
             return;
         }
+        //LOGGER.info("ticking server");
+
     }
 }

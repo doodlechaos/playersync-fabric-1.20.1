@@ -34,11 +34,11 @@ public class RenderTickCounterMixin {
             if(tickDelta == 0 || tickDelta == 1) //Only tick when we're recording or playing back
                 ticksToAdvance = 1;
 
-            if(PlayerTimeline.isPlaybackPaused()){
+            if(PlayerTimeline.isPlaybackPaused() && !PlayerTimeline.isRecording()){
                 //Tick every 3rd frame manually
                 counter++;
                 ticksToAdvance = 0;
-                if(counter >= 2){
+                if(counter >= 3){
                     ticksToAdvance = 1;
                     counter = 0;
                 }

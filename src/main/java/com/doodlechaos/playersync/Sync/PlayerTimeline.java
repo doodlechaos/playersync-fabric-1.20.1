@@ -99,15 +99,11 @@ public class PlayerTimeline {
 
     public static void update(){
         if(isPlaybackEnabled()){
-            if(!isPlaybackPaused())
-                advanceFrames(1);
-
             PlayerKeyframe keyframe = getCurKeyframe();
             setPlayerFromKeyframe(keyframe);
 
             if(prevFrame != getFrame())
                 InputsManager.SimulateInputsFromKeyframe(keyframe);
-
         }
         if(frame == getRecordedKeyframes().size() && countdownActive) //Check if we are finishing a countdown
         {
@@ -230,7 +226,7 @@ public class PlayerTimeline {
         }
         Vec3d lerpedPlayerPos = player.getLerpedPos(tickDelta);
 
-        long frameNumber = recordedKeyframes.size();
+        long frameNumber = getFrame(); //recordedKeyframes.size();
 
         Camera cam = client.gameRenderer.getCamera();
         Vec3d camPos = cam.getPos();
@@ -254,7 +250,7 @@ public class PlayerTimeline {
 
         recordedKeyframes.add(keyframe);
 
-        setFrame(getRecordedKeyframes().size());
+        //setFrame(getRecordedKeyframes().size() - 1);
 
         InputsManager.clearRecordedInputsBuffer();
     }
