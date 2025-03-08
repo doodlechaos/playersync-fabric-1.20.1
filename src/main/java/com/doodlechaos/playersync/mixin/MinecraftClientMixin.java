@@ -17,18 +17,32 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin {
 
+    @Unique private boolean runningSyncLoop = false;
+
     //When recording or playing back, render is called once every video frame
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onClientRenderStart(CallbackInfo ci) {
 
-        My60FPSUpdate();
+        if(runningSyncLoop){
+            if(PlayerSync.isWaitingForServer()){
+                ci.cancel();
+                return;
+            }
 
-        if(PlayerSync.TickServerFlag && !MinecraftClient.getInstance().isPaused()){ //Server doesn't tick when esc pause menu is up. Must continue or game will freeze.
+
+            PlayerTimeline.update();
+        }
+        else{
+            runningSyncLoop = true;
+
+            My60FPSUpdate(); //<< this can change the frame number
+
+            if(PlayerTimeline.isLockstepMode() && PlayerTimeline.isTickFrame() && PlayerTimeline.hasFrameChanged()){
+                PlayerSync.requestBlockingServerTick();
+            }
             ci.cancel();
             return;
         }
-
-        PlayerTimeline.update();
     }
     @Inject(method = "render", at = @At("TAIL"))
     private void onClientRenderFinish(CallbackInfo ci) {
@@ -42,10 +56,10 @@ public class MinecraftClientMixin {
         }
 
         PlayerTimeline.updatePrevFrame();
-
         if(PlayerTimeline.isRecording() ||
                 (PlayerTimeline.isPlaybackEnabled() && !PlayerTimeline.isPlaybackPaused()))
-            PlayerTimeline.advanceFrames(1);
+            PlayerTimeline.advanceFrames(1); //DO this here so that the server and client are on the same frame
+        runningSyncLoop = false;
     }
 
     @Unique
@@ -71,30 +85,26 @@ public class MinecraftClientMixin {
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onClientTick(CallbackInfo ci) {
 
-        if(PlayerTimeline.isRecording()){
-            PlayerSync.LOGGER.info("Ticking client on frame: " + PlayerTimeline.getFrame());
-            PlayerSync.TickServerFlag = true;
+        //PlayerSync.LOGGER.info("Ticking CLIENT_ on frame: " + PlayerTimeline.getFrame());
+/*        //Only tick server if we're recording or playing back, AND the timeline frame has changed
+        if (PlayerTimeline.isLockstepMode() && PlayerTimeline.getPrevFrame() != PlayerTimeline.getFrame()) {
+            LOGGER.info("Ticking client on frame: " + PlayerTimeline.getFrame());
+            PlayerSync.requestBlockingServerTick();
             return;
-        }
-
-        //Only tick server if we're recording or playing back, AND the timeline frame has changed
-        if (PlayerTimeline.isPlaybackEnabled() && PlayerTimeline.getPrevFrame() != PlayerTimeline.getFrame()) {
-            PlayerSync.LOGGER.info("Ticking client on frame: " + PlayerTimeline.getFrame());
-            PlayerSync.TickServerFlag = true;
-        }
+        }*/
     }
 
     //Tick is called from the render loop when necessary
     @Inject(method = "tick", at = @At("TAIL"), cancellable = true)
     private void onEndClientTick(CallbackInfo ci) {
 
-        //Manually tick the server and wait for its completion here?
+
 
     }
 
     @Inject(method = "getTickDelta", at = @At("HEAD"), cancellable = true)
     private void overrideGetTickDelta(CallbackInfoReturnable<Float> cir) {
-        if (PlayerTimeline.isRecording() || PlayerTimeline.isPlaybackEnabled()) {
+        if (PlayerTimeline.isLockstepMode()) {
             int playheadIndex = PlayerTimeline.getFrame();
             // Calculate the fractional tick: each tick equals 3 frames (60fps / 20tps)
             float tickDelta = (playheadIndex % 3) / 3.0f;

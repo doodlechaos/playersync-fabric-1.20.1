@@ -32,7 +32,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldEvents;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.slf4j.Logger;
@@ -43,7 +42,12 @@ public class PlayerSync implements ModInitializer {
 	public static final String MOD_ID = "playersync";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-	public static boolean TickServerFlag = false;
+	//public static boolean TickServerFlag = false;
+	//private static volatile boolean serverTickComplete = false;
+	private static volatile boolean waitingForServer = false;
+	public static volatile boolean serverTickRequest = false;
+
+	public static boolean isWaitingForServer(){return waitingForServer;}
 
 	public static Quaternionf camRot = new Quaternionf();
 
@@ -56,13 +60,11 @@ public class PlayerSync implements ModInitializer {
 		registerEvents();
 		PlayerTimeline.registerDebugText();
 
-		//TODO: How can I run an anonymous method once on the first minecraft tick?
-
 		HudRenderCallback.EVENT.register((matrixStack, tickDelta) -> {
 			MinecraftClient client = MinecraftClient.getInstance();
 
 			// Use fixed-width formatting for tick delta (assumed to be a float)
-			String debugText = String.format("PartialTick: %6.2f  TickServerFlag: %s", client.getTickDelta(), TickServerFlag);
+			String debugText = String.format("PartialTick: %6.2f  waitingForServer: %s", client.getTickDelta(), waitingForServer);
 			// Draw the text at position (10, 10) with white color (0xFFFFFF)
 			matrixStack.drawText(client.textRenderer, debugText, 10, 10, 0xFFFFFF, false);
 
@@ -142,6 +144,11 @@ public class PlayerSync implements ModInitializer {
 		return ActionResult.PASS;
 	}
 
+	public static void requestBlockingServerTick() {
+		waitingForServer = true;
+		serverTickRequest = true;
+	}
+
 
 	private void onStartClientTick(MinecraftClient client){
 
@@ -161,7 +168,7 @@ public class PlayerSync implements ModInitializer {
 
 	private void onEndServerTick(MinecraftServer minecraftServer)
 	{
-		PlayerSync.TickServerFlag = false;
+		waitingForServer = false;
 	}
 
 	public static ServerPlayerEntity GetServerPlayer(){

@@ -93,16 +93,21 @@ public class PlayerTimeline {
                     );
                 }
             }
-
         });
     }
+
+    public static boolean isLockstepMode(){ return (isRecording() || isPlaybackEnabled()); }
+
+    public static boolean isTickFrame() { return (getFrame() % 3) == 0;}
+
+    public static boolean hasFrameChanged(){ return (getFrame() != getPrevFrame());}
 
     public static void update(){
         if(isPlaybackEnabled()){
             PlayerKeyframe keyframe = getCurKeyframe();
             setPlayerFromKeyframe(keyframe);
 
-            if(prevFrame != getFrame())
+            if(hasFrameChanged())
                 InputsManager.SimulateInputsFromKeyframe(keyframe);
         }
         if(frame == getRecordedKeyframes().size() && countdownActive) //Check if we are finishing a countdown

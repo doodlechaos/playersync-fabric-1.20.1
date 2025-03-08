@@ -18,17 +18,14 @@ public abstract class MinecraftServerMixin {
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onTick(CallbackInfo ci){
 
-        if(!PlayerTimeline.isRecording() && !PlayerTimeline.isPlaybackEnabled()){
-            //LOGGER.info("ticking server");
-            return;
-        }
-
-        if (!PlayerSync.TickServerFlag) {
+        //Cancel the tick if we're in lockstep mode and not waiting for the server
+        if (PlayerTimeline.isLockstepMode() && !PlayerSync.serverTickRequest) {
             //LOGGER.info("Blocking server tick");
             ci.cancel();
             return;
         }
-        //LOGGER.info("ticking server");
-
+        PlayerSync.serverTickRequest = false;
+        //Allow the tick if we are not in lockstep mode, OR if we're not in lockstep mode and waiting for the server
+        LOGGER.info("ticking _SERVER on frame: " + PlayerTimeline.getFrame());
     }
 }

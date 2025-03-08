@@ -3,6 +3,7 @@
   "package": "com.doodlechaos.playersync.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "EntityMixin",
     "GameRendererMixin",
     "MinecraftClientMixin",
     "MinecraftServerMixin",
