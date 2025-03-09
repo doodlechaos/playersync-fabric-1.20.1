@@ -170,7 +170,7 @@ public class PlayerSync implements ModInitializer {
 	private void onEndServerTick(MinecraftServer minecraftServer)
 	{
 		waitingForServer = false;
-
+		LOGGER.info("Finished ticking server on frame: " + PlayerTimeline.getFrame());
 /*		MinecraftClient client = MinecraftClient.getInstance();
 		if (client.world != null) {
 			for (Entity entity : client.world.getEntities()) {

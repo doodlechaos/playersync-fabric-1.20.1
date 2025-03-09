@@ -29,8 +29,8 @@ public class PlayerTimeline {
     private static boolean playbackPaused = false;
     private static boolean playerDetatched = false;
 
-    private static int frame = 0;
-    private static int prevFrame = 0;
+    private static volatile int frame = 0;
+    private static volatile int prevFrame = 0;
     public static void updatePrevFrame(){prevFrame = frame;}
 
     private static final List<PlayerKeyframe> recordedKeyframes = new ArrayList<>();
@@ -118,23 +118,6 @@ public class PlayerTimeline {
             setPlaybackEnabled(false, true);
             setRecording(true);
         }
-
-/*        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.world != null) {
-            for (Entity entity : client.world.getEntities()) {
-
-                if(entity instanceof SnowballEntity){
-                    LOGGER.info(String.format(
-                            "SnowballEntity Details: prevPos=(%.2f, %.2f, %.2f), prevRotation=(%.2f, %.2f); currentPos=(%.2f, %.2f, %.2f), currentRotation=(%.2f, %.2f)",
-                            entity.prevX, entity.prevY, entity.prevZ,
-                            entity.prevYaw, entity.prevPitch,
-                            entity.getX(), entity.getY(), entity.getZ(),
-                            entity.getYaw(), entity.getPitch()
-                    ));
-                }
-
-            }
-        }*/
 
     }
 
@@ -274,8 +257,6 @@ public class PlayerTimeline {
         );
 
         recordedKeyframes.add(keyframe);
-
-        //setFrame(getRecordedKeyframes().size() - 1);
 
         InputsManager.clearRecordedInputsBuffer();
     }

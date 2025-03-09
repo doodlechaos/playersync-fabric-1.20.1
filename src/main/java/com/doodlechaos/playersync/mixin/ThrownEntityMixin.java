@@ -11,9 +11,9 @@ import static com.doodlechaos.playersync.PlayerSync.LOGGER;
 @Mixin(ThrownEntity.class)
 public class ThrownEntityMixin {
 
-    @Inject(method = "tick", at = @At("HEAD"))
+/*    @Inject(method = "tick", at = @At("HEAD"))
     private void onTick(CallbackInfo ci){
         LOGGER.info("Thrown entity tick detected");
-    }
+    }*/
 
 }
