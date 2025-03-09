@@ -41,7 +41,7 @@ public class WorldMixin {
         if(!PlayerTimeline.isLockstepMode())
             return;
 
-        if(PlayerTimeline.hasFrameChanged()) //Don't cancel if the frame changed
+        if(PlayerTimeline.hasFrameChanged() && PlayerTimeline.isTickFrame()) //Don't cancel if the frame changed
             return;
 
         ci.cancel();

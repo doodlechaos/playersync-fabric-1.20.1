@@ -6,6 +6,7 @@ import com.doodlechaos.playersync.Sync.InputsManager;
 import com.doodlechaos.playersync.Sync.PlayerTimeline;
 import com.doodlechaos.playersync.VideoRenderer;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,7 +29,6 @@ public class MinecraftClientMixin {
                 ci.cancel();
                 return;
             }
-
 
             PlayerTimeline.update();
         }

@@ -26,6 +26,6 @@ public abstract class MinecraftServerMixin {
         }
         PlayerSync.serverTickRequest = false;
         //Allow the tick if we are not in lockstep mode, OR if we're not in lockstep mode and waiting for the server
-        LOGGER.info("ticking _SERVER on frame: " + PlayerTimeline.getFrame());
+        //LOGGER.info("ticking _SERVER on frame: " + PlayerTimeline.getFrame());
     }
 }

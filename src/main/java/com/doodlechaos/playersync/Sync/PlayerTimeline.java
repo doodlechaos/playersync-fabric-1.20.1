@@ -7,6 +7,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.projectile.thrown.SnowballEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -116,6 +118,24 @@ public class PlayerTimeline {
             setPlaybackEnabled(false, true);
             setRecording(true);
         }
+
+/*        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.world != null) {
+            for (Entity entity : client.world.getEntities()) {
+
+                if(entity instanceof SnowballEntity){
+                    LOGGER.info(String.format(
+                            "SnowballEntity Details: prevPos=(%.2f, %.2f, %.2f), prevRotation=(%.2f, %.2f); currentPos=(%.2f, %.2f, %.2f), currentRotation=(%.2f, %.2f)",
+                            entity.prevX, entity.prevY, entity.prevZ,
+                            entity.prevYaw, entity.prevPitch,
+                            entity.getX(), entity.getY(), entity.getZ(),
+                            entity.getYaw(), entity.getPitch()
+                    ));
+                }
+
+            }
+        }*/
+
     }
 
 

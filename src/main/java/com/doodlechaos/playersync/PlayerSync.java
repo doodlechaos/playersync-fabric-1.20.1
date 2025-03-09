@@ -19,6 +19,7 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.server.MinecraftServer;
@@ -169,6 +170,17 @@ public class PlayerSync implements ModInitializer {
 	private void onEndServerTick(MinecraftServer minecraftServer)
 	{
 		waitingForServer = false;
+
+/*		MinecraftClient client = MinecraftClient.getInstance();
+		if (client.world != null) {
+			for (Entity entity : client.world.getEntities()) {
+				entity.prevX = entity.getX();
+				entity.prevY = entity.getY();
+				entity.prevZ = entity.getZ();
+				entity.prevYaw = entity.getYaw();
+				entity.prevPitch = entity.getPitch();
+			}
+		}*/
 	}
 
 	public static ServerPlayerEntity GetServerPlayer(){

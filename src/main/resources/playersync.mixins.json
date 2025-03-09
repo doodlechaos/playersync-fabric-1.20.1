@@ -9,6 +9,7 @@
     "MinecraftServerMixin",
     "ProjectileEntityMixin",
     "RenderTickCounterMixin",
+    "ThrownEntityMixin",
     "WorldMixin"
   ],
   "injectors": {
